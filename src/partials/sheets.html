@@ -56,29 +56,24 @@
             <template x-for="id in wantList" :key="'pw' + id"><img class="chip-card want" :src="card(id).img.s" alt=""></template>
           </div>
         </div>
-        <label class="field-label" x-text="t('publish.note')"></label>
-        <template x-if="accountType === 'bili'">
-          <div class="note-field" :class="{ 'is-bad': note.status === 'rejected' }">
-            <textarea maxlength="40" rows="2" :placeholder="t('publish.notePlaceholder')" x-model="note.text" @input="note.status = null"></textarea>
-            <span class="counter" x-text="note.text.length + '/40'"></span>
-            <p class="hint is-bad" x-show="note.status === 'rejected'" x-text="t('publish.rejected')"></p>
-            <p class="hint is-warn" x-show="note.status === 'unavailable'" x-text="t('publish.unavailable')"></p>
-          </div>
-        </template>
-        <template x-if="accountType === 'anon'">
-          <div>
-            <div class="preset-chips">
-              <template x-for="k in presetKeys" :key="k">
-                <button :class="{ on: note.preset === k }" @click="note.preset = note.preset === k ? null : k" x-text="t('presets.' + k)"></button>
-              </template>
-            </div>
-            <p class="hint" x-show="platform.env !== 'standalone'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#info"></use></svg> <span x-text="t('publish.loginForText')"></span></p>
-          </div>
-        </template>
+        <div class="field-label" id="trade-note-label" x-text="t('publish.note')"></div>
+        <div class="preset-chips" role="group" aria-labelledby="trade-note-label" aria-describedby="trade-time-hint">
+          <template x-for="k in presetKeys" :key="k">
+            <button type="button" :class="{ on: note.preset === k }" :aria-pressed="note.preset === k"
+                    @click="note.preset = note.preset === k ? null : k" x-text="t('presets.' + k)"></button>
+          </template>
+        </div>
+        <div class="field-label" id="trade-time-label" x-text="t('publish.tradeTime')"></div>
+        <div class="preset-chips" role="group" aria-labelledby="trade-time-label" aria-describedby="trade-time-hint">
+          <template x-for="k in timePresetKeys" :key="k">
+            <button type="button" :class="{ on: note.preset === k }" :aria-pressed="note.preset === k"
+                    @click="note.preset = note.preset === k ? null : k" x-text="t('presets.' + k)"></button>
+          </template>
+        </div>
+        <p class="hint" id="trade-time-hint" x-text="t('publish.noteHint')"></p>
         <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: timeLeft(resetAt) })"></p>
-        <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft || note.status === 'checking'" @click="doPublish()"
-                x-text="note.status === 'checking' ? t('publish.checking') : t('publish.go')"></button>
-        <button class="btn btn-ghost btn-block" x-show="note.status === 'unavailable'" @click="doPublish(true)" x-text="t('publish.publishWithout')"></button>
+        <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft" @click="doPublish()"
+                x-text="t('publish.go')"></button>
       </div>
     </template>
 
@@ -178,7 +173,7 @@
         <h3 class="sheet-title" x-text="t('me.importBox')"></h3>
         <p class="hint" x-text="t('me.boxImportHint')"></p>
         <label class="field-label" for="box-import-code" x-text="t('me.boxCode')"></label>
-        <textarea id="box-import-code" class="box-code-input mono" rows="4" maxlength="512" placeholder="LASB1-…" spellcheck="false" autocapitalize="characters" autocomplete="off" x-model="boxImportInput" @input="boxImportInput = $event.target.value; previewBoxImport()" :aria-invalid="!!boxImportError" aria-describedby="box-import-status"></textarea>
+        <textarea id="box-import-code" class="box-code-input mono" rows="4" maxlength="512" placeholder="…" spellcheck="false" autocapitalize="characters" autocomplete="off" x-model="boxImportInput" @input="boxImportInput = $event.target.value; previewBoxImport()" :aria-invalid="!!boxImportError" aria-describedby="box-import-status"></textarea>
         <div id="box-import-status" class="sheet-notes" aria-live="polite">
           <p class="hint is-bad" x-show="boxImportError" x-text="boxImportError"></p>
           <template x-if="boxImportPreview">

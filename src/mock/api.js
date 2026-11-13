@@ -1,16 +1,17 @@
 // 模拟后端（设计文档第 11、13 节）。数据存在 localStorage，接口形状与正式 API 草案一致：
 //  - 主动扫描（发布 / 重新匹配）最多 3 对，被动匹配不限
 //  - 匹配详情在 reveal 之前只返回 uidMasked
-//  - 每日 1 次主动发布 / 重新匹配，按各服 04:00 刷新
+//  - 每日 1 次主动发布 / 重新匹配，按各服 04:00 刷新；主动或自动确认成功后立即恢复次数
 
 import { storage } from '../lib/storage.js';
 import { maskUid, nextResetAt } from '../lib/uid.js';
+import { TRADE_NOTE_PRESETS, isPresetNote } from '../lib/trade-notes.js';
 import { dev } from './dev.js';
 
 const ACTIVE_SCAN_MAX = 3;
 const MATCH_TTL = 48 * 3600e3;
+const CONFIRM_TIMEOUT = 10 * 60e3;
 const SERVER_PREFIX = { celestia: '1', irminsul: '5', asia: '8', america: '6', europe: '7', tw: '9' };
-const PRESETS = ['online_tonight', 'anytime', 'weekday_night', 'weekend', 'note_trade'];
 const PARTNER_FAULT = ['no_friend', 'no_response', 'no_card', 'changed_mind'];
 
 const delay = (ms = 350 + Math.random() * 400) => new Promise((r) => setTimeout(r, ms));
@@ -37,6 +38,23 @@ function load() {
       save(db);
     }
   }
+  let changed = false;
+  for (const m of db.matches) {
+    if (m.status !== 'confirming') continue;
+    const confirmation = m.myConfirm || m.partnerConfirm;
+    if (confirmation?.result !== 'completed') continue;
+    const deadline = confirmation.at + CONFIRM_TIMEOUT;
+    // 兼容原型已有记录，首次确认后重新计算期限，重复读取不延长计时。
+    if (m.expiresAt !== deadline) { m.expiresAt = deadline; changed = true; }
+    if (m.expiresAt <= Date.now()) {
+      m.status = 'completed';
+      db.completedCount += 1;
+      // 自动确认成功同样恢复主动发布次数，与正式后端保持一致。
+      db.quotaUsedAt = 0;
+      changed = true;
+    }
+  }
+  if (changed) save(db);
   return db;
 }
 function save(db) {
@@ -86,7 +104,7 @@ function releasePairs(listing, pairs) {
 function makeMatch(db, scannedBy, max) {
   const pairs = takePairs(db.listing, max);
   if (!pairs.length) return null;
-  const note = Math.random() < 0.6 ? { preset: pick(PRESETS) } : Math.random() < 0.5 ? { text: '周末全天在线，申请备注换牌~' } : null;
+  const note = Math.random() < 0.6 ? { preset: pick(TRADE_NOTE_PRESETS) } : null;
   const m = {
     id: rid(), createdAt: Date.now(), expiresAt: Date.now() + MATCH_TTL, scannedBy,
     partner: fakePartner(db.listing.server, note), pairs, status: 'matched',
@@ -127,7 +145,9 @@ export const api = {
     const db = load();
     if (!quotaLeft(db, server)) throw new ApiError('DAILY_LIMIT', { retryAt: nextResetAt(server) });
     if (db.listing) throw new ApiError('LISTING_EXISTS');
-    if (note?.text && !db.session) throw new ApiError('NOTE_TEXT_FORBIDDEN');
+    if (db.matches.some(m => ['matched', 'confirming'].includes(m.status))) throw new ApiError('ACTIVE_EXCHANGE');
+    if (note != null && !isPresetNote(note)) throw new ApiError('NOTE_REJECTED');
+    note = note == null ? null : { preset: note.preset };
     db.listing = { id: rid(), give: { ...give }, want: [...want], note, server, mode, createdAt: Date.now() };
     db.quotaUsedAt = Date.now();
     const created = [];
@@ -145,6 +165,8 @@ export const api = {
     await delay(250);
     const db = load();
     if (!db.listing) throw new ApiError('NO_LISTING');
+    if (note != null && !isPresetNote(note)) throw new ApiError('NOTE_REJECTED');
+    note = note == null ? null : { preset: note.preset };
     Object.assign(db.listing, { give: { ...give }, want: [...want], note });
     save(db);
     return db.listing;
@@ -174,6 +196,7 @@ export const api = {
     const db = load();
     const m = db.matches.find((x) => x.id === id);
     if (!m) throw new ApiError('NOT_FOUND');
+    if (!['matched', 'confirming'].includes(m.status) || m.expiresAt <= Date.now()) throw new ApiError('MATCH_CLOSED');
     m.revealed = true;
     m.revealedAt = m.revealedAt || Date.now();
     save(db);
@@ -186,13 +209,22 @@ export const api = {
     const db = load();
     const m = db.matches.find((x) => x.id === id);
     if (!m) throw new ApiError('NOT_FOUND');
+    if (!['matched', 'confirming'].includes(m.status) || m.expiresAt <= Date.now()) throw new ApiError('MATCH_CLOSED');
+    if (m.myConfirm) throw new ApiError('CONFIRM_ALREADY_SUBMITTED');
+    if (result === 'completed') completedPairs ??= m.pairs.map((_, i) => i);
     m.myConfirm = { result, completedPairs, reason, note, at: Date.now() };
     let outcome;
     if (result === 'completed') {
       const done = completedPairs ?? m.pairs.map((_, i) => i);
       releasePairs(db.listing, m.pairs.filter((_, i) => !done.includes(i)));
+      // 成功声明结束本次需求；已有匹配继续确认，不自动匹配剩余牌。
+      db.listing = null;
       m.status = m.partnerConfirm ? 'completed' : 'confirming';
-      if (m.status === 'completed') db.completedCount += 1;
+      if (m.status === 'confirming') m.expiresAt = m.myConfirm.at + CONFIRM_TIMEOUT;
+      if (m.status === 'completed') {
+        db.completedCount += 1;
+        db.quotaUsedAt = 0;
+      }
       outcome = m.status;
     } else {
       m.status = 'failed';
@@ -235,10 +267,16 @@ export const api = {
       const db = load();
       const m = db.matches.find((x) => x.status === 'matched' || x.status === 'confirming');
       if (!m) return null;
-      m.partnerConfirm = { result: 'completed', at: Date.now() };
-      if (m.status === 'confirming') {
+      if (m.partnerConfirm) return view(m);
+      m.partnerConfirm = { result: 'completed', completedPairs: m.pairs.map((_, i) => i), at: Date.now() };
+      db.listing = null;
+      if (m.myConfirm) {
         m.status = 'completed';
         db.completedCount += 1;
+        db.quotaUsedAt = 0;
+      } else {
+        m.status = 'confirming';
+        m.expiresAt = m.partnerConfirm.at + CONFIRM_TIMEOUT;
       }
       save(db);
       return view(m);

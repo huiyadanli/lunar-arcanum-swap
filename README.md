@@ -1,17 +1,19 @@
 # lunar-arcanum-swap
 
-原神「月谕圣牌」交换站。设计文档见 [docs/design.md](docs/design.md)，后端方案见 [CloudBase 后端概要设计](docs/cloudbase-backend-design.md)（21 个接口精简为 11 个，尚未接入或部署）。
+原神「月谕圣牌」交换站。设计文档见 [docs/design.md](docs/design.md)，后端方案见 [CloudBase 后端概要设计](docs/cloudbase-backend-design.md)（21 个接口精简为 11 个，已部署并提供前端接入模式）。
 
 米游社图片导入 Box 已接入，见[当前设计与实现说明](docs/miyoushe-box-import-flexible.md)。采用浏览器本地颜色分割与自适应牌框定位，不依赖固定分辨率、宽高比或页首页尾模板，仅保留493字节的数字“2”特征。实际JavaScript核心已通过三张原图及缩放、裁边、留边、行距变化等36个回归用例。
 
 ## 后端开发
 
-CloudBase 后端和 PostgreSQL 数据库已部署，包含 11 个接口、匹配事务和每分钟定时维护；匿名登录、B站身份登录、重复 UID 与真实并发匹配已通过已部署 API 联调。[配置接口](https://lunar-arcanum-swap-d9cl8ad90b4e4-1252025612.ap-shanghai.app.tcloudbase.com/api/v1/config)可访问，运行与发布方式见 [后端说明](backend/README.md)。前端目前仍使用模拟接口。
+CloudBase 后端和 PostgreSQL 数据库已部署，包含 11 个接口、匹配事务和每分钟定时维护；匿名登录、B站身份登录、重复 UID 与真实并发匹配已通过已部署 API 联调。[配置接口](https://lunar-arcanum-swap-d9cl8ad90b4e4-1252025612.ap-shanghai.app.tcloudbase.com/api/v1/config)可访问，运行与发布方式见 [后端说明](backend/README.md)。前端通过 `npm run dev:online` 连接真实线上后端，`npm run dev` 保留原型模拟模式。
 
-## 当前前端进度：M0 静态可点击原型
+在本机已有 `.secrets/backend.runtime.json` 的情况下，运行 `npm run test:backend:online` 即可验证当前线上后端，无需手动输入接口地址或启动本地后端。验证会创建测试身份并写入云数据库，结束后撤回测试身份的等待需求；成功时输出 `"ok": true` 和 `"mode": "deployed-api"`。
+
+## 前端运行
 
 原生 ES Modules + Alpine.js，使用 **Vite 构建为纯静态文件**。Alpine.js 保留在 `src/vendor/`，构建时一起打包，不依赖 CDN。
-后端和 B站 Toy SDK 都是模拟的（`src/mock/`），完整流程可以在浏览器里直接走通。
+默认运行使用模拟后端和模拟 B站 Toy SDK（`src/mock/`）；online 模式使用真实 CloudBase 登录和线上业务 API，不注入模拟 Toy SDK。
 
 ### 运行
 
@@ -23,6 +25,21 @@ npm run dev
 # 打开终端显示的本地地址，默认 http://localhost:5173/
 ```
 
+### 本地前端连接真实线上后端
+
+```powershell
+npm run dev:online
+# 打开终端显示的地址，默认 http://127.0.0.1:5173/
+```
+
+此命令持续运行本地前端，页面里的 UID 保存、发布、编辑、撤回、匹配、查看 UID 和确认结果均请求真实线上 API。无需启动本地后端，也无需 `.secrets/backend.runtime.json`；前端从公开 `/config` 获取登录配置，由 CloudBase Web SDK 建立和续期匿名会话。浏览器状态与模拟模式隔离，线上接口失败时直接提示错误。
+
+双人测试可以使用普通浏览器窗口和无痕窗口（或两个不同浏览器），分别填写同一服务器的 UID。一方给出 A、想要 B，另一方给出 B、想要 A；发布后应能真实匹配。有进行中交换时每 10 秒刷新，仅等待匹配时每 30 秒刷新，没有需求和进行中交换时停止轮询；切回页面和完成操作后获取完整状态。轮询省略历史与供需统计，交换结束后自动补拉最终记录。两份无痕窗口通常共享同一会话，请使用彼此隔离的浏览器环境。
+
+online 模式隐藏模拟调试按钮，按真实每日额度运行；操作会写入线上数据库，测试结束可撤回等待中的需求。完整 Box 仍保存在当前浏览器，真实 Toy 环境按原有逻辑同步到 Toy 云存储。B站真机来源还需要配置安全域名和 UP主 MID；本地使用匿名身份即可测试交换流程。
+
+公开 API 地址配置在 `.env.online`。需要连接其他后端时，在已忽略的 `.env.online.local` 中设置 `VITE_API_BASE_URL`，重新启动开发服务；不要向前端配置写入服务端 API Key 或签票私钥。
+
 ### 构建与部署
 
 ```bash
@@ -30,6 +47,10 @@ npm run build
 npm run preview
 # 本地预览构建结果，默认 http://localhost:4173/
 ```
+
+需要构建连接真实 API 的版本时，执行 `npm run build:online`；随后可用 `npm run preview` 预览。
+
+同一份线上构建可用于 B站 Toy 和独立站：页面仅在 `bilibili.com` 或其子域名下自动加载真实 Toy SDK，并等待加载后再识别 App / Web 能力；其他域名不加载、不启用真实 Toy SDK。加载失败或超过 10 秒时记录控制台警告，继续使用独立站能力。本地默认模拟模式仍支持 `?mock=bili` 等显式模拟参数，B站域名下不会注入模拟 SDK。
 
 构建产物在 `dist/`，包含 `index.html` 和带内容哈希的 JS、CSS、卡图、字体。
 HTML 页面片段通过 `?raw` 在构建时打包，不再在运行时请求 `src/partials/`。
@@ -43,6 +64,8 @@ Vite 配置使用 `base: './'`，同一份产物支持域名根目录和子目�
 CI 中可使用 `npm ci` 安装锁定版本，然后执行 `npm run build`；静态托管平台的构建命令为 `npm run build`，输出目录为 `dist`。
 
 ### 切换两类用户 / 运行环境
+
+以下调试参数和面板用于默认模拟模式；online 模式在本地按匿名用户运行，不模拟 B站登录和匹配。
 
 | 地址 | 效果 |
 |---|---|
@@ -93,9 +116,9 @@ CI 中可使用 `npm ci` 安装锁定版本，然后执行 `npm run build`；静
 
 ### 圣牌 Box 字母码
 
-在「我的 → 导出圣牌 Box」复制以 `LASB1-` 开头的字母码，再到「导入圣牌 Box」粘贴。界面自动识别并校验，点击「导入并替换 Box」即可应用。字母码包含 22 种圣牌的准确张数（0–99）、保留张数、想要标记、快速交换选牌和当前模式，不包含身份凭据或交换记录。已有进行中的交换时暂不允许导入；已有等待中的换牌需求可在导入后手动更新。
+在「我的 → 导出圣牌 Box」复制字母码，再到「导入圣牌 Box」粘贴。界面自动识别并校验，点击「导入并替换 Box」即可应用。字母码包含 22 种圣牌的准确张数（每种 0–9）、保留张数、想要标记、快速交换选牌和当前模式，不包含身份凭据或交换记录。已有进行中的交换时暂不允许导入；已有等待中的换牌需求可在导入后手动更新。
 
-数据按位打包，数量根据实际最大值选择位宽，0/1 收藏状态每张牌只占一位；末尾加入 CRC-16 校验后转为纯大写字母。`LASB1-` 是格式魔数与版本标记，完整格式见 [Box 字母码格式](docs/box-code.md)。
+数据按位打包，数量根据实际最大值选择位宽，0/1 收藏状态每张牌只占一位；含 2 位版本号，快速交换数据、“不想要”标记为空时整块省略，末尾加入 CRC-10 校验后转为 32 字符的无歧义字母数字串（无前缀，去掉 0/O/1/I）。完整格式见 [Box 字母码格式](docs/box-code.md)。
 
 ### 目录
 

@@ -1,5 +1,5 @@
 // M0 原型入口：插入构建时打包的页面片段 → 初始化平台 → 启动 Alpine。
-// 业务状态集中在 app() 组件里；后端为 mock/api.js 模拟。
+// 业务状态集中在 app() 组件里；原型后端为 mock/api.js，online 模式连接真实 API。
 
 import Alpine from './vendor/alpine-3.14.1.esm.js';
 import { CARDS, CARD_BY_ID, CARD_COUNT } from './data/cards.js';
@@ -11,8 +11,12 @@ import { parseImageCount, createImageBoxPatch } from './lib/image-box-draft.js';
 import imageImportIcons from '../assets/icons/ui.svg?url';
 import { renderExchangeCard } from './lib/exchange-card.js';
 import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selection.js';
+import { hasWaitingCards, canStartTrade, matchStatus } from './lib/trade-state.js';
+import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote } from './lib/trade-notes.js';
+import { statePollDelay } from './lib/state-polling.js';
 import { platform, copyText } from './platform/index.js';
-import { api } from './mock/api.js';
+import { api } from './api/index.js';
+import { ONLINE_BACKEND } from './config.js';
 import { dev, setDev } from './mock/dev.js';
 import { toyUi } from './mock/toy-sdk.js';
 import { detectTier, watchLowFps } from './fx/perf.js';
@@ -30,7 +34,6 @@ import overlaysHtml from './partials/overlays.html?raw';
 const PARTIALS = [welcomeHtml, boxHtml, tradeHtml, matchHtml, meHtml, sheetsHtml, overlaysHtml];
 const ROUTES = ['welcome', 'box', 'trade', 'me'];
 const ACTIVE = ['matched', 'confirming'];
-const PRESET_KEYS = ['online_tonight', 'anytime', 'weekday_night', 'weekend', 'note_trade'];
 const REASONS = ['no_friend', 'no_response', 'no_card', 'changed_mind', 'self', 'other'];
 
 const rid4 = () => Math.random().toString(16).slice(2, 6).toUpperCase();
@@ -41,6 +44,7 @@ function app() {
   let imageSource = null;
   let imageController = null;
   let imageRevision = 0;
+  let refreshing = null;
   const SHEET_LEAVE_MS = 260; // 略长于 CSS 中抽屉的离场过渡
   return {
     // ---------- 常量 ----------
@@ -48,10 +52,12 @@ function app() {
     imageImportIcons,
     langs: LANGS,
     servers: SERVERS,
-    presetKeys: PRESET_KEYS,
+    presetKeys: QUICK_NOTE_PRESETS,
+    timePresetKeys: TRADE_TIME_PRESETS,
     reasons: REASONS,
     dev,
     platform,
+    online: ONLINE_BACKEND,
 
     // ---------- 持久化状态 ----------
     lang: saved.lang || detectLang(),
@@ -89,11 +95,13 @@ function app() {
     quotaLeft: 1,
     resetAt: 0,
     completedCount: 0,
+    poolStatsValue: { waiting: 0 },
+    connectionError: '',
     toasts: [],
     revealing: null,
     platformDialog: null,
     syncState: 'synced',
-    note: { text: '', preset: null, status: null },
+    note: { preset: null },
     followCache: null,
     authorInfo: null,
     uidPeek: false,
@@ -162,7 +170,11 @@ function app() {
       });
       toyUi.notice = (msg) => this.toast(`（模拟）${msg}`);
 
-      await this.setupIdentity();
+      try {
+        await this.setupIdentity();
+      } catch (error) {
+        this.showApiError(error);
+      }
       this.platform.onSafeArea((sa) => document.documentElement.style.setProperty('--safe-bottom', `${sa.bottom}px`));
 
       // 持久化 + 云同步（B站用户）：JSON.stringify 会读取所有嵌套字段，从而建立响应式依赖
@@ -174,14 +186,16 @@ function app() {
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') this.flushCloudSync();
-        if (document.visibilityState === 'visible' && this.sheet === 'follow') this.recheckFollow(true);
+        if (document.visibilityState === 'hidden') { this.flushCloudSync(); this.pollState(); }
+        if (document.visibilityState === 'visible' && this.sheet === 'follow') this.recheckFollow(true).catch(error => this.showApiError(error));
+        if (document.visibilityState === 'visible') this.refresh(true).catch(error => this.showApiError(error));
       });
 
       window.addEventListener('hashchange', () => this.parseRoute(true));
       this.parseRoute(false);
-      await this.refresh();
+      try { await this.refresh(); } catch (error) { this.showApiError(error); }
       this.ready = true;
+      this.pollState();
     },
 
     snapshot() {
@@ -189,21 +203,27 @@ function app() {
         lang: this.lang, fxPref: this.fxPref, fxAuto: this.fxAuto, keep: this.keep, uid: this.uid,
         onboarded: this.onboarded, mode: this.mode,
         counts: this.counts, wantOff: this.wantOff, quick: this.quick, profile: this.profile,
-        profileDeclined: this.profileDeclined, anonTag: this.anonTag, session: this.session,
+        profileDeclined: this.profileDeclined, anonTag: this.anonTag, session: ONLINE_BACKEND ? null : this.session,
         notify: this.notify,
       };
     },
 
     // ---------- 身份（设计文档 3.3、3.4） ----------
     async setupIdentity() {
+      if (ONLINE_BACKEND) {
+        const config = await api.init();
+        this.platform.authorMid = config.authorMid;
+      }
       if (this.platform.env === 'standalone') {
         this.accountType = 'anon';
+        if (ONLINE_BACKEND) this.session = await api.createSession('anon');
         return;
       }
       const probe = await this.platform.probeLogin();
       if (!probe.loggedIn) {
         this.accountType = 'anon';
         this.loginHint = true;
+        if (ONLINE_BACKEND) this.session = await api.createSession('anon');
         return;
       }
       this.accountType = 'bili';
@@ -215,7 +235,7 @@ function app() {
           this.syncState = 'error';
         }
       }
-      this.session = { token: s.token, accountType: 'bili' };
+      this.session = ONLINE_BACKEND ? { accountType: 'bili' } : { token: s.token, accountType: 'bili' };
       // 从云端恢复（新设备场景）
       try {
         const cloud = await this.platform.cloud.get(['box', 'quick', 'prefs', 'sync']);
@@ -323,7 +343,9 @@ function app() {
       this.toasts = this.toasts.filter((x) => x.id !== id);
     },
     async copy(text) {
-      if (await copyText(text)) this.toast(this.t('common.copied'));
+      const copied = await copyText(text);
+      if (copied) this.toast(this.t('common.copied'));
+      return copied;
     },
 
     // ---------- 路由 ----------
@@ -371,11 +393,21 @@ function app() {
     get uidReady() {
       return this.uidState.state === 'ok';
     },
-    confirmUid() {
-      if (!this.uidReady) return;
-      this.uid = this.uidInput;
-      if (this.onboardStep === 1) this.onboardStep = 2;
-      else this.sheet = null;
+    async confirmUid() {
+      if (!this.uidReady || this.busy) return;
+      this.busy = true;
+      try {
+        const uid = this.uidInput;
+        if (ONLINE_BACKEND) {
+          if (!this.session) await this.setupIdentity();
+          await api.updateProfile({ uid });
+        }
+        this.uid = uid;
+        if (this.onboardStep === 1) this.onboardStep = 2;
+        else this.sheet = null;
+        if (ONLINE_BACKEND) await this.refresh(true);
+      } catch (error) { this.showApiError(error); }
+      finally { this.busy = false; }
     },
     chooseMode(mode) {
       this.mode = mode;
@@ -390,6 +422,9 @@ function app() {
     },
     get historyMatches() {
       return this.matches.filter((m) => !ACTIVE.includes(m.status));
+    },
+    get hasWaitingListing() {
+      return hasWaitingCards(this.listing);
     },
     lockedGive(id) {
       return this.activeMatches.reduce((n, m) => n + m.pairs.filter((p) => p.give === id).length, 0);
@@ -454,6 +489,7 @@ function app() {
       return norm(this.listing.give, this.listing.want) !== norm(this.giveMap, this.wantList);
     },
     get publishBlocker() {
+      if (this.activeMatches.length) return this.t('box.finishActive');
       if (!this.giveTotal) return this.mode === 'full' ? this.t('box.noSpare') : this.t('box.noWant');
       if (!this.wantList.length) return this.mode === 'full' && this.ownedCount === CARD_COUNT ? this.t('box.completeDesc') : this.t('box.noWant');
       return null;
@@ -562,32 +598,21 @@ function app() {
     // ---------- 发布（设计文档 6.3.3） ----------
     openPublish() {
       if (this.publishBlocker || this.listing) return;
-      this.note = { text: '', preset: null, status: null };
+      this.note = { preset: null };
       this.sheet = 'publish';
     },
-    async doPublish(withoutNote = false) {
+    async doPublish() {
       if (this.busy) return;
-      let note = null;
-      if (!withoutNote) {
-        if (this.accountType === 'bili' && this.note.text.trim()) {
-          this.note.status = 'checking';
-          const r = await this.platform.checkText(this.note.text.trim(), 'trade_note');
-          if (r !== 'ok') {
-            this.note.status = r;
-            return;
-          }
-          note = { text: this.note.text.trim() };
-        } else if (this.note.preset) note = { preset: this.note.preset };
-      }
+      const note = TRADE_NOTE_PRESETS.includes(this.note.preset) ? { preset: this.note.preset } : null;
       this.busy = true;
       try {
         if (!this.session) {
           const s = await api.createSession('anon');
-          this.session = { token: s.token, accountType: 'anon' };
+          this.session = ONLINE_BACKEND ? { accountType: 'anon' } : { token: s.token, accountType: 'anon' };
         }
         const res = await api.publish({ give: this.giveMap, want: this.wantList, note, server: this.serverKey, mode: this.mode });
         this.onboardHint = null;
-        await this.refresh();
+        await this.refresh(true);
         this.sheet = null;
         this.go('trade');
         if (res.matches.length) {
@@ -601,33 +626,70 @@ function app() {
       }
     },
     async syncListing() {
-      await api.editListing({ give: this.giveMap, want: this.wantList, note: this.listing.note });
-      await this.refresh();
-      this.toast(this.t('common.done'));
+      if (this.busy || !this.listing) return;
+      this.busy = true;
+      try {
+        await api.editListing({ give: this.giveMap, want: this.wantList,
+          note: isPresetNote(this.listing.note) ? { preset: this.listing.note.preset } : null });
+        await this.refresh(true);
+        this.toast(this.t('common.done'));
+      } catch (error) {
+        this.showApiError(error);
+        if (error.code === 'VERSION_CONFLICT') await this.refresh(true).catch(next => this.showApiError(next));
+      } finally { this.busy = false; }
     },
 
     // ---------- 交换（设计文档 5.3–5.5、6.5） ----------
-    async refresh() {
-      if (!this.serverKey) return;
-      const s = await api.getState(this.serverKey);
-      Object.assign(this, { listing: s.listing, matches: s.matches, quotaLeft: s.quotaLeft, resetAt: s.resetAt, completedCount: s.completedCount });
+    async refresh(fresh = false) {
+      if (!ONLINE_BACKEND && !this.serverKey) return;
+      if (ONLINE_BACKEND && !this.session) await this.setupIdentity();
+      if (refreshing) {
+        if (!fresh) return refreshing;
+        // 写操作完成后，等待旧轮询结束再获取新状态，避免将写入前的视图当作结果。
+        try { await refreshing; } catch (error) { this.showApiError(error); }
+      }
+      refreshing = (async () => {
+        const s = await api.getState(this.serverKey, { light: !fresh && this.ready });
+        Object.assign(this, { listing: s.listing, matches: s.matches, quotaLeft: s.quotaLeft, resetAt: s.resetAt, completedCount: s.completedCount });
+        if (ONLINE_BACKEND) {
+          // 身份、额度和匹配以服务端为准；完整 Box 仍按原有方式保存在本机或 Toy 云存储。
+          this.uid = s.me.uid || '';
+          this.accountType = s.me.accountType;
+          this.poolStatsValue = s.stats;
+          this.connectionError = '';
+        }
+      })();
+      try { return await refreshing; } finally { refreshing = null; this.pollState(); }
+    },
+    pollState() {
+      clearTimeout(this._pollTimer);
+      const delay = statePollDelay({ listing: this.listing, matches: this.matches, visible: document.visibilityState === 'visible' });
+      if (delay === null) return;
+      this._pollTimer = setTimeout(async () => {
+        if (document.visibilityState === 'visible' && !this.busy) {
+          try { await this.refresh(); } catch (error) { this.showApiError(error); }
+        }
+        this.pollState();
+      }, delay);
+    },
+    showApiError(error) {
+      const message = error.message || error.code || String(error);
+      if (!ONLINE_BACKEND || this.connectionError !== message) this.toast(message);
+      if (ONLINE_BACKEND) this.connectionError = message;
     },
     get newMatchCount() {
-      return this.matches.filter((m) => m.status === 'matched' && !m.revealed).length;
+      return this.activeMatches.filter((m) => !m.myConfirm && !m.revealed).length;
     },
     get currentMatch() {
       return this.matches.find((m) => m.id === this.param) || null;
     },
-    matchStatus(m) {
-      if (m.status === 'matched') return m.revealed ? 'trading' : 'matched';
-      return m.status;
-    },
+    canStartTrade,
+    matchStatus,
     noteText(note) {
-      if (!note) return '';
-      return note.text || this.t(`presets.${note.preset}`);
+      return isPresetNote(note) ? this.t(`presets.${note.preset}`) : '';
     },
     get poolStats() {
-      return api.stats(this.serverKey);
+      return ONLINE_BACKEND ? this.poolStatsValue : api.stats(this.serverKey);
     },
     async playMatch(m) {
       this.revealing = { give: m.pairs[0].give, get: m.pairs[0].get, n: m.pairs.length };
@@ -636,16 +698,21 @@ function app() {
       this.revealing = null;
     },
     async withdraw() {
-      await api.withdraw();
-      await this.refresh();
-      this.toast(this.t('trade.withdrawn'));
+      if (this.busy) return;
+      this.busy = true;
+      try {
+        await api.withdraw();
+        await this.refresh(true);
+        this.toast(this.t('trade.withdrawn'));
+      } catch (error) { this.showApiError(error); }
+      finally { this.busy = false; }
     },
     async rematch() {
       if (!this.quotaLeft || this.busy) return;
       this.busy = true;
       try {
         const r = await api.rematch(this.serverKey);
-        await this.refresh();
+        await this.refresh(true);
         if (r.matches.length) {
           await this.playMatch(r.matches[0]);
           this.go(`trade/${r.matches[0].id}`);
@@ -682,11 +749,13 @@ function app() {
       this.busy = true;
       try {
         await api.reveal(id);
-        await this.refresh();
+        await this.refresh(true);
         await Alpine.nextTick();
         const m = this.matches.find((x) => x.id === id);
         const el = document.getElementById('uid-full');
         if (el && m?.partner.uid) await decodeText(el, m.partner.uid);
+      } catch (error) {
+        this.showApiError(error);
       } finally {
         this.busy = false;
       }
@@ -730,39 +799,43 @@ function app() {
     },
     async confirmDone(id, sel) {
       const m = this.matches.find((x) => x.id === id);
-      if (!m || !sel.length) return;
-      const res = await api.confirm(id, { result: 'completed', completedPairs: sel });
-      const before = { counts: [...this.counts], quick: JSON.parse(JSON.stringify(this.quick)) };
-      const done = sel.map((i) => m.pairs[i]);
-      const wasComplete = this.ownedCount === CARD_COUNT;
-      for (const p of done) {
-        if (this.mode === 'full') {
-          this.counts[p.give - 1] = Math.max(0, this.counts[p.give - 1] - 1);
-          this.counts[p.get - 1] += 1;
-        } else {
-          const g = { ...this.quick.give };
-          g[p.give] = (g[p.give] || 1) - 1;
-          if (g[p.give] <= 0) delete g[p.give];
-          this.quick.give = g;
-          this.quick.want = this.quick.want.filter((x) => x !== p.get);
+      if (!m || !sel.length || this.busy || m.myConfirm) return;
+      this.busy = true;
+      try {
+        const res = await api.confirm(id, { result: 'completed', completedPairs: sel });
+        const before = { counts: [...this.counts], quick: JSON.parse(JSON.stringify(this.quick)) };
+        const done = sel.map((i) => m.pairs[i]);
+        const wasComplete = this.ownedCount === CARD_COUNT;
+        for (const p of done) {
+          if (this.mode === 'full') {
+            this.counts[p.give - 1] = Math.max(0, this.counts[p.give - 1] - 1);
+            this.counts[p.get - 1] += 1;
+          } else {
+            const g = { ...this.quick.give };
+            g[p.give] = (g[p.give] || 1) - 1;
+            if (g[p.give] <= 0) delete g[p.give];
+            this.quick.give = g;
+            this.quick.want = this.quick.want.filter((x) => x !== p.get);
+          }
         }
-      }
-      this.sheet = null;
-      await this.refresh();
-      const changes = done.map((p) => `${this.cardName(p.give)} −1，${this.cardName(p.get)} +1`).join('；');
-      this.toast(this.t('match.boxUpdated', { changes }), {
-        ms: 5000,
-        action: this.t('common.undo'),
-        onAction: () => {
-          this.counts = before.counts;
-          this.quick = before.quick;
-        },
-      });
-      if (res.outcome === 'confirming') setTimeout(() => this.toast(this.t('match.waitPartner')), 600);
-      if (!wasComplete && this.mode === 'full' && this.ownedCount === CARD_COUNT) {
-        burst(innerWidth / 2, innerHeight / 3, '#E9C77B', 12);
-        this.toast(this.t('match.fullMoon'));
-      }
+        this.sheet = null;
+        await this.refresh(true);
+        const changes = done.map((p) => `${this.cardName(p.give)} −1，${this.cardName(p.get)} +1`).join('；');
+        this.toast(this.t('match.boxUpdated', { changes }), {
+          ms: 5000,
+          action: this.t('common.undo'),
+          onAction: () => {
+            this.counts = before.counts;
+            this.quick = before.quick;
+          },
+        });
+        if (res.outcome === 'confirming') setTimeout(() => this.toast(this.t('match.waitPartner')), 600);
+        if (!wasComplete && this.mode === 'full' && this.ownedCount === CARD_COUNT) {
+          burst(innerWidth / 2, innerHeight / 3, '#E9C77B', 12);
+          this.toast(this.t('match.fullMoon'));
+        }
+      } catch (error) { this.showApiError(error); }
+      finally { this.busy = false; }
     },
     openProblem(m, reason = null) {
       this.sheetData = { matchId: m.id, reason, note: '' };
@@ -770,11 +843,15 @@ function app() {
     },
     async submitProblem() {
       const { matchId, reason, note } = this.sheetData;
-      if (!reason) return;
-      const res = await api.confirm(matchId, { result: 'failed', reason, note });
-      this.sheet = null;
-      await this.refresh();
-      this.toast(this.t(res.outcome === 'back_to_pool' ? 'match.backToPool' : 'match.recordedSelf'), { ms: 3600 });
+      if (!reason || this.busy) return;
+      this.busy = true;
+      try {
+        const res = await api.confirm(matchId, { result: 'failed', reason, note });
+        this.sheet = null;
+        await this.refresh(true);
+        this.toast(this.t(res.outcome === 'back_to_pool' && this.hasWaitingListing ? 'match.backToPool' : 'match.recordedSelf'), { ms: 3600 });
+      } catch (error) { this.showApiError(error); }
+      finally { this.busy = false; }
     },
 
     // ---------- 我的 ----------
@@ -1066,11 +1143,13 @@ function app() {
 
     // ---------- 原型调试面板 ----------
     devSet(patch, reload, quiet = false) {
+      if (ONLINE_BACKEND) return;
       Object.assign(this.dev, patch); // 经过响应式代理，面板立即刷新
       setDev(patch, reload);
       if (!reload && !quiet) this.toast('已更新调试设置');
     },
     async devIncoming() {
+      if (ONLINE_BACKEND) return;
       const m = api.dev.incoming();
       await this.refresh();
       this.sheet = null;
@@ -1081,12 +1160,14 @@ function app() {
       }, ms: 5000 });
     },
     async devPartner(kind) {
+      if (ONLINE_BACKEND) return;
       const m = kind === 'reveal' ? api.dev.partnerReveal() : api.dev.partnerConfirm();
       await this.refresh();
       this.sheet = null;
       this.toast(m ? (kind === 'reveal' ? this.t('match.partnerStarted') : this.t('status.completed')) : '没有待完成的交换');
     },
     async devResetQuota() {
+      if (ONLINE_BACKEND) return;
       api.dev.resetQuota();
       await this.refresh();
       this.toast('已重置今日次数');

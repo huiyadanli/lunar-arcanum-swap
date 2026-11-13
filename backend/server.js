@@ -3,7 +3,6 @@ import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import { ApiError } from './errors.js';
 import * as validate from './validation.js';
-import { SERVERS, NINE_DIGIT, TEN_DIGIT_PREFIX } from '../src/lib/uid.js';
 
 const routes = [
   ['GET', /^\/api\/v1\/config$/, 'config'],
@@ -66,15 +65,8 @@ export function createServer({ service, config, logger = console }) {
       const forwarded = config.trustProxy ? String(request.headers['x-forwarded-for'] || '').split(',').at(-1)?.trim() : null;
       const context = { deviceId, ip: forwarded && isIP(forwarded) ? forwarded : request.socket.remoteAddress };
       if (action === 'config') {
-        const labels = {
-          online_tonight: ['今晚 20 点后在线', 'Online after 8pm'], anytime: ['随时可加', 'Add me anytime'],
-          weekday_night: ['工作日晚上', 'Weekday evenings'], weekend: ['周末全天在线', 'Online all weekend'],
-          note_trade: ['请备注换牌', 'Mention the trade'],
-        };
-        send(200, { version: 1, cardMetadataVersion: 1, servers: SERVERS, uidRules: { nineDigit: NINE_DIGIT, tenDigit: TEN_DIGIT_PREFIX },
-          limits: { dailyScans: 1, activeScanPairs: 3, matchTtlHours: 48, maxCardQuantity: 99, maxGiveTotal: 200 },
-          presets: validate.PRESETS.map(id => ({ id, text: { 'zh-CN': labels[id][0], en: labels[id][1] } })), authorMid: config.authorMid,
-          features: { webPush: false, anonymousLogin: true, customLogin: Boolean(config.customLoginKey) },
+        // 只返回部署相关的公开配置；服务器、UID 规则、留言等静态数据随前端打包。
+        send(200, { authorMid: config.authorMid,
           cloudbase: { envId: config.envId, publishableKey: config.publishableKey } });
         return;
       }
@@ -92,7 +84,8 @@ export function createServer({ service, config, logger = console }) {
         context.requestKey = key;
       }
       let data = {};
-      if (action === 'state') data = { historyCursor: validate.historyCursor(url.searchParams.get('historyCursor')) };
+      if (action === 'state') data = { historyCursor: validate.historyCursor(url.searchParams.get('historyCursor')),
+        ...(url.searchParams.get('light') === '1' ? { light: true } : {}) };
       else {
         const body = await readBody(request);
         if (action === 'profile') data = validate.profile(body);

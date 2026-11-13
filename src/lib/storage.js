@@ -1,6 +1,9 @@
 // localStorage 的安全封装：隐私模式或被禁用时静默降级为内存存储。
 
-const PREFIX = 'las.';
+import { ONLINE_BACKEND, API_BASE_URL } from '../config.js';
+
+// 保留原型数据；不同线上 API 的 Box、UID 和偏好也各自独立。
+const PREFIX = ONLINE_BACKEND ? `las.online.${encodeURIComponent(API_BASE_URL)}.` : 'las.';
 const memory = new Map();
 
 function backend() {

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="src/styles/pages.css">
   <link rel="stylesheet" href="src/styles/namecard.css">
   <link rel="stylesheet" href="src/styles/image-import.css">
-  <!-- Toy 包构建时在此注入：<script src="//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js"></script> -->
+  <!-- Toy SDK 原接入方式：<script src="//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js"></script>；现由平台初始化按 bilibili.com 及其子域名动态加载。 -->
   <script type="module" src="src/main.js"></script>
 </head>
 <body x-data="app" :class="{ 'is-ready': ready, 'is-wide': wide, 'is-welcome': route === 'welcome' }" :data-env="platform.env" :lang="lang">
@@ -22,7 +22,7 @@
   <div class="sky-glow" aria-hidden="true"></div>
 
   <!-- B站 App 容器栏（仅原型演示 toy-app 环境；真实环境由 App 绘制） -->
-  <div class="toy-bar" x-show="platform.env === 'toy-app'" x-cloak>
+  <div class="toy-bar" x-show="!online && platform.env === 'toy-app'" x-cloak>
     <span class="toy-bar-back"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></span>
     <span class="toy-bar-title" x-text="t('app.name')"></span>
     <span class="toy-bar-more"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#more"></use></svg></span>

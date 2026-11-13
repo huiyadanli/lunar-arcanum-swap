@@ -21,10 +21,9 @@
           <span class="moons" x-text="moons(m.partner.creditLevel)"></span>
           <span class="hint" x-text="t(m.partner.creditLevel >= 5 ? 'match.credit' : 'match.creditOk')"></span>
         </div>
-        <p class="partner-note" x-show="m.partner.note"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
+        <p class="partner-note" x-show="noteText(m.partner.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
         <div class="row-btns" x-show="m.partner.uid">
           <button class="btn btn-ghost sm" @click="copy(m.partner.uid)" x-text="t('match.copyUid')"></button>
-          <button class="btn btn-ghost sm" @click="copy(tradeMsg(m))" x-text="t('match.copyMsg')"></button>
         </div>
       </div>
 
@@ -47,10 +46,11 @@
       </div>
 
       <!-- 开始交换之前 -->
-      <template x-if="m.status === 'matched' && !m.partner.uid">
+      <!-- 对方先确认后仍可查看 UID，随后由我方确认完成。 -->
+      <template x-if="canStartTrade(m)">
         <div class="cta-block">
           <button class="btn btn-primary btn-block btn-lg btn-shine" :disabled="busy" @click="startTrade(m)">
-            <span x-text="t('match.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
+            <span x-text="t(m.status === 'confirming' ? 'match.review' : 'match.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
           </button>
           <p class="hint center" x-text="t('match.startHint')"></p>
           <button class="link-btn center muted" @click="openProblem(m, 'self')" x-text="t('match.quit')"></button>
@@ -61,23 +61,42 @@
       <template x-if="['matched', 'confirming'].includes(m.status) && m.partner.uid">
         <div class="cta-block">
           <p class="partner-live" x-show="m.partnerRevealed"><i class="pulse"></i><span x-text="t('match.partnerStarted')"></span></p>
-          <p class="hint" x-text="t('match.addHint', { uid: m.partner.uid })"></p>
           <ol class="steps">
-            <li x-text="t('match.step1')"></li>
+            <li>
+              <span class="step-title" x-text="t('match.step1')"></span>
+              <p class="step-hint">
+                <span class="step-uid" x-data="{ copied: false }">
+                  <span x-text="t('match.addHint', { uid: m.partner.uid })"></span>
+                  <button type="button" class="uid-copy" @click="copied = await copy(m.partner.uid)" :aria-label="t('match.copyUid')" :title="t(copied ? 'common.copied' : 'match.copyUid')">
+                    <svg class="icon icon-xs" aria-hidden="true" focusable="false"><use :href="imageImportIcons + (copied ? '#check' : '#copy')"></use></svg>
+                  </button>
+                </span><span x-text="t('match.joinWorldHint')"></span>
+              </p>
+              <button type="button" class="msg-preview" x-data="{ copied: false }" :class="{ 'is-copied': copied }" @click="copied = await copy(tradeMsg(m))" :aria-label="t('match.copyMsg')">
+                <span class="msg-preview-text" x-text="tradeMsg(m)"></span>
+                <span class="msg-copy-action" aria-live="polite">
+                  <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + (copied ? '#check' : '#copy')"></use></svg>
+                  <span x-text="t(copied ? 'match.noteCopied' : 'match.copyNote')"></span>
+                </span>
+              </button>
+            </li>
             <li x-text="t('match.step2')"></li>
-            <li x-text="t('match.step3')"></li>
+            <li>
+              <span class="step-title" x-text="t('match.step3')"></span><strong class="confirm-reminder" x-show="!m.myConfirm" x-text="t('match.confirmReminder')"></strong>
+            </li>
           </ol>
-          <div class="msg-preview" @click="copy(tradeMsg(m))">
-            <small x-text="t('match.copyMsg')"></small>
-            <span x-text="tradeMsg(m)"></span>
+          <!-- 真实接口的 confirming 是双方共享状态；对方先确认后，我方仍须能提交结果。 -->
+          <div class="row-btns stretch" x-show="!m.myConfirm">
+            <button class="btn btn-primary" :disabled="busy" @click="openDone(m)"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('match.doneBtn')"></span></button>
+            <button class="btn btn-ghost" :disabled="busy" @click="openProblem(m)" x-text="t('match.problemBtn')"></button>
           </div>
-          <div class="row-btns stretch" x-show="m.status === 'matched'">
-            <button class="btn btn-primary" @click="openDone(m)"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('match.doneBtn')"></span></button>
-            <button class="btn btn-ghost" @click="openProblem(m)" x-text="t('match.problemBtn')"></button>
-          </div>
-          <p class="pill st-confirming center-pill" x-show="m.status === 'confirming'" x-text="t('status.confirming')"></p>
         </div>
       </template>
+
+      <!-- 等待状态不依赖是否已查看 UID，双方都能看到确认期限与奖励规则。 -->
+      <div class="cta-block" x-show="m.status === 'confirming'" aria-live="polite">
+        <p class="hint center" x-text="t(m.myConfirm ? 'match.waitPartner' : 'match.partnerConfirmed')"></p>
+      </div>
 
       <template x-if="!['matched', 'confirming'].includes(m.status)">
         <div class="cta-block"><p class="pill center-pill" :class="'st-' + m.status" x-text="t('status.' + m.status)"></p></div>

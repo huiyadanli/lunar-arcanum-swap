@@ -13,7 +13,7 @@
   </div>
 
   <!-- 等待中：星轨升级为双向共鸣星门；两侧只展示实际发布的给出 / 想要卡牌。 -->
-  <template x-if="listing">
+  <template x-if="hasWaitingListing">
     <div class="waiting resonance" :class="{ 'is-searching': busy }">
       <div class="resonance-header">
         <span class="resonance-kicker">LUNAR CONNECTION</span>
@@ -58,8 +58,9 @@
   <!-- 我的换牌需求 -->
   <template x-if="listing">
     <div class="panel">
-      <div class="panel-head"><b x-text="t('trade.myListing')"></b><span class="pill" x-text="t('status.waiting')"></span></div>
-      <div class="listing-line">
+      <div class="panel-head"><b x-text="t('trade.myListing')"></b><span class="pill" x-text="t(hasWaitingListing ? 'status.waiting' : 'status.reserved')"></span></div>
+      <p class="hint" x-show="!hasWaitingListing" x-text="t('trade.reservedHint')"></p>
+      <div class="listing-line" x-show="hasWaitingListing">
         <div class="chips-row">
           <template x-for="(q, id) in listing.give" :key="'lg' + id">
             <span class="chip-wrap"><img class="chip-card" :src="card(id).img.s" alt=""><i x-show="q > 1" x-text="'×' + q"></i></span>
@@ -72,12 +73,12 @@
           </template>
         </div>
       </div>
-      <p class="hint" x-show="listing.note"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> <span x-text="noteText(listing.note)"></span></p>
+      <p class="hint" x-show="noteText(listing.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> <span x-text="noteText(listing.note)"></span></p>
       <div class="row-btns">
-        <button class="btn btn-ghost sm namecard-action" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg><span x-text="t('namecard.entry')"></span></button>
+        <button class="btn btn-ghost sm namecard-action" x-show="hasWaitingListing" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg><span x-text="t('namecard.entry')"></span></button>
         <button class="btn btn-ghost sm" @click="go('box')" x-text="t('trade.edit')"></button>
         <button class="btn btn-ghost sm" @click="withdraw()" x-text="t('trade.withdraw')"></button>
-        <button class="btn btn-ghost sm" :disabled="!quotaLeft || busy" @click="rematch()"
+        <button class="btn btn-ghost sm" :disabled="!hasWaitingListing || !quotaLeft || busy" @click="rematch()"
                 x-text="quotaLeft ? t('trade.rematchLeft', { n: quotaLeft }) : t('trade.rematch') + ' · ' + t('trade.resetIn', { time: timeLeft(resetAt) })"></button>
       </div>
       <!-- 通知：独立站 Web Push；Toy 内提示回访 + 邀请 -->
@@ -95,8 +96,9 @@
   <!-- 待完成的交换 -->
   <div class="panel" x-show="activeMatches.length">
     <div class="panel-head"><b x-text="t('trade.active')"></b></div>
+    <p class="hint" x-show="!listing" x-text="t('trade.roundClosed')"></p>
     <template x-for="m in activeMatches" :key="m.id">
-      <button class="match-row" @click="go('trade/' + m.id)" :class="{ fresh: m.status === 'matched' && !m.revealed }">
+      <button class="match-row" @click="go('trade/' + m.id)" :class="{ fresh: !m.myConfirm && !m.revealed }">
         <div class="match-pairs">
           <template x-for="(p, i) in m.pairs" :key="i">
             <span class="pair-mini"><img :src="card(p.give).img.s" alt=""><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><img :src="card(p.get).img.s" alt=""></span>
@@ -105,6 +107,7 @@
         <div class="match-meta">
           <span class="uid-mono" x-text="m.partner.uidMasked"></span>
           <span class="pill" :class="'st-' + matchStatus(m)" x-text="t('status.' + matchStatus(m))"></span>
+          <span class="hint" x-show="m.status === 'confirming' && m.myConfirm" x-text="t('trade.autoConfirmHint')"></span>
         </div>
         <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
       </button>

@@ -148,7 +148,7 @@
 
   <!-- 吸底发布条 -->
   <div class="sticky-bar">
-    <template x-if="!listing">
+    <template x-if="!listing && !activeMatches.length">
       <div class="bar-inner">
         <div class="bar-summary">
           <div class="bar-row">
@@ -169,11 +169,11 @@
         <button class="btn btn-primary btn-shine" :disabled="!!publishBlocker" @click="openPublish()" x-text="t('box.publish')"></button>
       </div>
     </template>
-    <template x-if="listing">
+    <template x-if="listing || activeMatches.length">
       <div class="bar-inner">
         <div class="bar-summary">
-          <div class="bar-live"><i class="pulse"></i><span x-text="t('box.listingActive')"></span></div>
-          <div class="bar-sub" x-show="listingDirty">
+          <div class="bar-live"><i class="pulse"></i><span x-text="t(hasWaitingListing ? 'box.listingActive' : 'box.finishActive')"></span></div>
+          <div class="bar-sub" x-show="listing && listingDirty">
             <span x-text="t('box.boxChanged')"></span> ·
             <button class="link-btn inline" @click="syncListing()" x-text="t('box.syncListing')"></button>
           </div>

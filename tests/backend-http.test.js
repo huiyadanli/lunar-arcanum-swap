@@ -30,7 +30,9 @@ describe('HTTP API 与输入边界', () => {
     await withServer(async base => {
       const configResponse = await fetch(`${base}/api/v1/config`);
       assert.equal(configResponse.status, 200);
-      assert.doesNotMatch(JSON.stringify(await configResponse.json()), /server-secret|hmac-test-secret/);
+      const publicConfig = await configResponse.json();
+      assert.deepEqual(publicConfig, { authorMid: '', cloudbase: { envId: 'test-env', publishableKey: 'public-key' } });
+      assert.doesNotMatch(JSON.stringify(publicConfig), /server-secret|hmac-test-secret/);
       assert.equal((await fetch(`${base}/api/v1/state`)).status, 401);
       assert.equal((await fetch(`${base}/api/v1/state`, { headers: { Authorization: 'Bearer forged-token' } })).status, 401);
       assert.equal((await fetch(`${base}/api/v1/me`, { method: 'PUT', headers: { Authorization: 'Bearer valid-token' } })).status, 400);
@@ -131,5 +133,29 @@ describe('CloudBase 平台适配', () => {
     const recovered = await service.session({ credential: first.credential }, {});
     assert.equal(recovered.credential, undefined);
     assert.match(params.p_credential_hash, /^[a-f\d]{64}$/);
+  });
+
+  it('业务写入先持久化唤醒，再调用数据库；状态读取不产生唤醒信号', async () => {
+    const calls = [];
+    const service = createCloudBaseService({ ...config, maintenanceSignals: true }, async (url, request) => {
+      calls.push({ url, body: JSON.parse(request.body) });
+      return Response.json(url.includes('/v1/functions/') ? { leaseUntil: Date.now() + 120000 } : {});
+    });
+    await service.execute({ authId: 'subject' }, 'publish', { give: { 17: 1 }, want: [1] }, { requestKey: 'key-12345' });
+    assert.match(calls[0].url, /\/v1\/functions\/swap-maintenance$/);
+    assert.equal(calls[0].body.action, 'wake');
+    assert.ok(calls[1].body.p_data._maintenanceLeaseUntil > Date.now());
+    await service.execute({ authId: 'subject' }, 'state', {}, {});
+    assert.equal(calls.length, 3);
+    assert.match(calls[2].url, /\/rpc\/swap_dispatch$/);
+  });
+
+  it('唤醒失败时不提交业务写入，避免成功结算后丢失后台确认任务', async () => {
+    let calls = 0;
+    const service = createCloudBaseService({ ...config, maintenanceSignals: true }, async () => {
+      calls++; throw Error('storage failure');
+    });
+    await assert.rejects(service.execute({ authId: 'subject' }, 'confirm', { result: 'completed' }, { requestKey: 'key-12345' }), /BACKEND_UNAVAILABLE/);
+    assert.equal(calls, 1);
   });
 });

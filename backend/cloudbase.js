@@ -1,6 +1,8 @@
 import cloudbase from '@cloudbase/node-sdk';
-import { randomBytes, createHmac } from 'node:crypto';
+import { randomBytes, randomUUID, createHmac } from 'node:crypto';
 import { ApiError, upstreamError } from './errors.js';
+import { maintenanceSignature, SCHEDULE_PREFIX } from './maintenance-scheduler.js';
+import resources from './runtime-resources.json' with { type: 'json' };
 
 export function createCloudBaseService(config, fetcher = fetch) {
   const base = config.apiBase.replace(/\/$/, '');
@@ -77,10 +79,23 @@ export function createCloudBaseService(config, fetcher = fetch) {
       normalized.toyOpenIdHmac = hash(`toy:${normalized.toyOpenId}`);
       delete normalized.toyOpenId;
     }
+    const fingerprint = context.requestKey ? hash(JSON.stringify({ action, data: normalized })) : null;
+    if (config.maintenanceSignals && action !== 'state') {
+      const nonce = randomUUID();
+      const issuedAt = Date.now();
+      const wake = await jsonRequest('/v1/functions/swap-maintenance', { method: 'POST',
+        headers: { Authorization: `Bearer ${config.serverKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'wake', nonce, issuedAt,
+          signature: maintenanceSignature(config.hmacSecret, 'wake', nonce, issuedAt) }) });
+      if (!Number.isSafeInteger(wake.leaseUntil) || wake.leaseUntil <= Date.now() || wake.leaseUntil > Date.now() + 180000) {
+        throw new ApiError('MAINTENANCE_UNAVAILABLE', 503);
+      }
+      normalized._maintenanceLeaseUntil = wake.leaseUntil;
+    }
     const result = await rpc('swap_dispatch', {
       p_auth_id: identity.authId, p_custom_id: identity.customId, p_action: action, p_data: normalized,
       p_request_key: context.requestKey || null,
-      p_fingerprint: context.requestKey ? hash(JSON.stringify({ action, data: normalized })) : null,
+      p_fingerprint: fingerprint,
       p_rate_keys: rateKeys(context),
     });
     if (action === 'state' && result.nextHistoryCursor) result.nextHistoryCursor = Buffer.from(JSON.stringify(result.nextHistoryCursor)).toString('base64url');
@@ -93,6 +108,8 @@ export function loadConfig(env = process.env) {
   const envId = env.TCB_ENV;
   const serverKey = env.CLOUDBASE_APIKEY;
   const hmacSecret = env.SWAP_HMAC_SECRET;
+  const projectResources = envId === resources.envId ? resources : null;
+  const maintenanceEnabled = env.SWAP_MAINTENANCE_ENABLED !== 'false' && Boolean(projectResources?.maintenanceEnabled || env.SWAP_MAINTENANCE_BUCKET);
   if (!envId || !serverKey || !hmacSecret || hmacSecret.length < 32) throw new Error('Missing backend environment configuration');
   let customLoginKey = null;
   if (env.SWAP_CUSTOM_LOGIN_KEY) {
@@ -106,6 +123,10 @@ export function loadConfig(env = process.env) {
     envId, serverKey, hmacSecret, customLoginKey,
     apiBase: env.CLOUDBASE_API_BASE || `https://${envId}.api.tcloudbasegateway.com`,
     publishableKey: env.CLOUDBASE_PUBLISHABLE_KEY || '', authorMid: env.SWAP_AUTHOR_MID || '',
+    maintenanceSignals: maintenanceEnabled && env.SWAP_MAINTENANCE_SIGNALS !== 'false',
+    maintenanceBucket: maintenanceEnabled ? (env.SWAP_MAINTENANCE_BUCKET || projectResources?.maintenanceBucket || '') : '',
+    maintenanceRegion: env.SWAP_MAINTENANCE_REGION || projectResources?.maintenanceRegion || 'ap-shanghai',
+    maintenancePrefix: SCHEDULE_PREFIX,
     trustProxy: ['true', 'enabled'].includes(env.SWAP_TRUST_PROXY),
     corsOrigins: (env.SWAP_CORS_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean),
     gatewayCors: !['false', 'disabled'].includes(env.SWAP_GATEWAY_CORS),

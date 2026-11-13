@@ -61,4 +61,4 @@
 </div>
 
 <!-- 原型调试入口 -->
-<button class="dev-fab" x-show="route !== 'welcome' && !revealing" x-cloak @click="sheet = 'debug'" aria-label="原型调试"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#wrench"></use></svg></button>
+<button class="dev-fab" x-show="!online && route !== 'welcome' && !revealing" x-cloak @click="sheet = 'debug'" aria-label="原型调试"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#wrench"></use></svg></button>

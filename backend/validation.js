@@ -1,7 +1,8 @@
 import { ApiError } from './errors.js';
 import { resolveUid, SERVERS } from '../src/lib/uid.js';
+import { TRADE_NOTE_LABELS, isPresetNote } from '../src/lib/trade-notes.js';
 
-export const PRESETS = ['online_tonight', 'anytime', 'weekday_night', 'weekend', 'note_trade'];
+export const PRESETS = Object.keys(TRADE_NOTE_LABELS);
 export const REASONS = ['no_friend', 'no_response', 'no_card', 'changed_mind', 'self', 'other'];
 const UUID = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i;
 
@@ -23,8 +24,7 @@ export function text(value, max, { optional = false, filter = true } = {}) {
 export function note(value) {
   if (value === undefined || value === null) return null;
   const item = object(value);
-  if (typeof item.preset === 'string' && PRESETS.includes(item.preset) && item.text === undefined) return { preset: item.preset };
-  if (item.preset === undefined && typeof item.text === 'string') return { text: text(item.text, 40) };
+  if (isPresetNote(item)) return { preset: item.preset };
   invalid('NOTE_REJECTED');
 }
 export function profile(value) {

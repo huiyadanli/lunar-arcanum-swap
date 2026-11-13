@@ -47,7 +47,7 @@ try {
   }
   report.push('真实匿名登录、重复 UID 保存和账号独立成功');
   const [alice, bob, carol] = clients;
-  const publishAlice = { give: { 17: 1 }, want: [1], mode: 'quick' };
+  const publishAlice = { give: { 17: 1 }, want: [1, 2], mode: 'quick' };
   const publishKey = randomUUID();
   await request(alice, '/listings', { method: 'POST', body: publishAlice, key: publishKey });
   const duplicates = await Promise.all([bob, carol].map(client => request(client, '/listings', {
@@ -58,21 +58,41 @@ try {
   const outsider = winner === bob ? carol : bob;
   const active = await request(alice, '/state');
   const mid = active.matches[0].id;
+  assert.deepEqual(active.listing.give, {});
+  assert.deepEqual(active.listing.want, [2]);
   assert.equal(active.matches[0].partner.uid, undefined);
   report.push('真实并发竞争同一张牌：只分配一次');
   await request(outsider, `/matches/${mid}/reveal`, { method: 'POST', expected: 404 });
   const revealKey = randomUUID();
   assert.equal((await request(alice, `/matches/${mid}/reveal`, { method: 'POST', key: revealKey })).uid, '812345678');
   await request(alice, `/matches/${mid}/confirm`, { method: 'POST', body: { result: 'completed' } });
+  const awaiting = await request(winner, '/state');
+  const aliceAwaiting = await request(alice, '/state');
+  assert.equal(aliceAwaiting.listing, null);
+  assert.equal(aliceAwaiting.quota.left, 0);
+  assert.equal(awaiting.quota.left, 0);
+  assert.equal(awaiting.listing, null);
+  assert.equal(awaiting.matches[0].status, 'confirming');
+  assert.equal(awaiting.matches[0].myConfirm, null);
+  assert.equal(awaiting.matches[0].partnerConfirm.result, 'completed');
+  assert.equal(awaiting.matches[0].partner.uid, undefined);
+  assert.equal((await request(winner, `/matches/${mid}/reveal`, { method: 'POST' })).uid, '812345678');
   await request(winner, `/matches/${mid}/confirm`, { method: 'POST', body: { result: 'completed' } });
   const finished = await request(alice, '/state');
   assert.equal(finished.history[0].status, 'completed');
   assert.equal(finished.history[0].partner.uid, undefined);
   assert.equal(finished.me.completedCount, 1);
+  assert.equal(finished.quota.left, 1);
+  assert.equal((await request(winner, '/state')).quota.left, 1);
   await request(alice, `/matches/${mid}/reveal`, { method: 'POST', key: revealKey, expected: 409 });
   await request(alice, '/listings', { method: 'POST', body: publishAlice, key: publishKey });
   assert.equal((await request(alice, '/state')).me.completedCount, 1);
-  report.push('越权拒绝、按需展示 UID、完成结算和请求幂等成功');
+  await request(alice, '/listings', { method: 'POST', body: { give: { 18: 1 }, want: [3], mode: 'quick' } });
+  assert.equal((await request(alice, '/state')).quota.left, 0);
+  await request(alice, `/matches/${mid}/confirm`, { method: 'POST', body: { result: 'completed' } });
+  assert.equal((await request(alice, '/state')).quota.left, 0);
+  report.push('单方不恢复次数，双方成功后立即恢复双方次数；重新发布成功且旧确认不重复奖励');
+  report.push('单方确认结束双方需求；未查看 UID 的对方可继续查看并确认；完成结算、越权拒绝和幂等成功');
   for (const path of ['/v1/rdb/rest/matches?select=*', '/v1/rdb/rest/rpc/swap_dispatch']) {
     const response = await fetch(`${config.apiBase}${path}`, { method: path.includes('/rpc/') ? 'POST' : 'GET',
       headers: { Authorization: `Bearer ${alice.token}`, 'Content-Type': 'application/json' },

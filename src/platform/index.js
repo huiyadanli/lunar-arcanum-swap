@@ -1,11 +1,13 @@
 // 平台适配层（设计文档 3.1、3.6、12.5）。
 // 业务代码只调用这里导出的 platform，不直接使用 window.toy。
-// 原型阶段：dev.env 为 toy-* 时注入模拟 SDK；真实 Toy 包里 window.toy 由平台脚本提供。
+// 原型阶段：非 B站域名且 dev.env 为 toy-* 时注入模拟 SDK；真实 Toy 包里 window.toy 由按域名加载的平台脚本提供。
 
 import { dev } from '../mock/dev.js';
 import { createMockToy } from '../mock/toy-sdk.js';
 import { createQrDataUrl } from '../lib/qrcode.js';
+import { ONLINE_BACKEND } from '../config.js';
 import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl } from './exchange-site.js';
+import { isBilibiliHost, loadToySdk } from './toy-sdk-loader.js';
 
 /** 统一错误：kind = unsupported | rate_limited | not_logged_in | invalid | denied | unknown */
 export class PlatformError extends Error {
@@ -52,13 +54,18 @@ export const platform = {
   env: 'standalone',
   /** 'bili' | 'anon' */
   accountType: 'anon',
+  authorMid: AUTHOR_MID,
   /** Toy 中但未登录：提示「登录 B站 可跨设备同步」 */
   loginHint: false,
   features: {},
 
   async init() {
-    if (dev.env !== 'standalone' && !window.toy) window.toy = createMockToy();
-    const toy = window.toy;
+    let toy = await loadToySdk();
+    if (!isBilibiliHost(location.hostname) && !ONLINE_BACKEND && dev.env !== 'standalone') {
+      // 本地显式模拟仍可用，但不借用其他域名预先注入的真实 SDK。
+      toy = window.toy = createMockToy();
+    }
+    this.features = {};
     if (!toy) {
       this.env = 'standalone';
     } else {
@@ -206,7 +213,7 @@ export const platform = {
       }
     },
     async profile() {
-      if (!window.toy) return null;
+      if (platform.env === 'standalone' || !window.toy) return null;
       try {
         const r = await window.toy.getAuthorProfile();
         return r?.status === 'ok' ? r.data : null;
@@ -216,8 +223,9 @@ export const platform = {
     },
     /** 必须在用户手势中调用。 */
     async openSpace() {
-      if (window.toy) return window.toy.navigate({ type: 'space', id: AUTHOR_MID });
-      window.open(`https://space.bilibili.com/${AUTHOR_MID}`, '_blank', 'noopener');
+      if (ONLINE_BACKEND && (!platform.authorMid || platform.authorMid === '0')) throw new PlatformError('unsupported', 'author_not_configured');
+      if (platform.env !== 'standalone' && window.toy) return window.toy.navigate({ type: 'space', id: platform.authorMid });
+      window.open(`https://space.bilibili.com/${platform.authorMid}`, '_blank', 'noopener');
     },
   },
 

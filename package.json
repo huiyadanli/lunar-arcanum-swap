@@ -8,14 +8,17 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:online": "vite --mode online --host 127.0.0.1",
     "build": "vite build",
+    "build:online": "vite build --mode online",
     "preview": "vite preview",
     "test": "node --test",
     "build:backend": "node scripts/build-backend.mjs",
     "start:backend": "node backend/dev.js",
     "package:backend": "python scripts/package-backend.py",
     "test:backend": "node --test tests/backend-*.test.js",
-    "test:backend:cloud": "node scripts/check-backend-cloud.mjs"
+    "test:backend:cloud": "node scripts/check-backend-cloud.mjs",
+    "test:backend:online": "node scripts/check-backend-cloud.mjs --url https://lunar-arcanum-swap-d9cl8ad90b4e4-1252025612.ap-shanghai.app.tcloudbase.com/api/v1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.16",
@@ -23,7 +26,9 @@
     "vite": "^8.3.8"
   },
   "dependencies": {
+    "@cloudbase/js-sdk": "^3.11.0",
     "@cloudbase/node-sdk": "^3.18.7",
+    "cos-nodejs-sdk-v5": "^3.0.0",
     "qrcode-generator": "^2.0.4"
   }
 }

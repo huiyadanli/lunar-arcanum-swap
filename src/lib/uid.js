@@ -1,5 +1,5 @@
 // UID → 服务器识别与脱敏（设计文档 2.5、5.4）。
-// 规则表在正式版由 /config 下发，这里内置一份默认规则。
+// 静态规则随前端打包，后端复用同一模块校验提交的 UID，不再通过 /config 下发。
 
 export const SERVERS = {
   celestia: { region: 'cn', name: { 'zh-CN': '天空岛', en: 'Celestia' }, tone: 'gold', tz: 8 },
