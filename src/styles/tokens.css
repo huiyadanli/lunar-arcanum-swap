@@ -1,0 +1,68 @@
+/* 设计 Token（设计文档 7.2–7.7）。只有深色主题：月夜氛围是产品核心。 */
+
+@font-face {
+  font-family: 'Cinzel';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../../assets/fonts/cinzel-600-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2122, U+2212;
+}
+
+:root {
+  color-scheme: dark;
+
+  /* 背景层级 */
+  --bg-0: #070914;
+  --bg-1: #0D1124;
+  --surface-1: rgba(28, 34, 66, 0.62);
+  --surface-2: rgba(36, 43, 82, 0.96);
+  --surface-solid: #1A2042;
+  --border: rgba(214, 222, 240, 0.14);
+  --border-strong: rgba(214, 222, 240, 0.28);
+
+  /* 文字 */
+  --text-1: #EEF1F8;
+  --text-2: #A9B1C9;
+  --text-3: #6B7391;
+
+  /* 品牌 */
+  --moon-silver: #D6DEF0;
+  --moon-gold: #E9C77B;
+  --moon-gold-deep: #C99A4A;
+  --arcane: #9C8CFF;
+  --glow-cyan: #7FD8FF;
+  --bili-pink: #FB7299; /* 只用于 B站 角标 */
+
+  /* 语义 */
+  --ok: #5ED6A0;
+  --warn: #F2B35B;
+  --bad: #E36D7A;
+
+  /* 服务器徽章色 */
+  --tone-gold: #E9C77B;
+  --tone-cyan: #7FD8FF;
+  --tone-blue: #7FA6FF;
+  --tone-violet: #B59CFF;
+  --tone-rose: #FF9DBA;
+
+  --card-color: #4D6FBF;
+
+  /* 字体 */
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "MiSans", "Microsoft YaHei", "Noto Sans SC", "Segoe UI", sans-serif;
+  --font-display: "Cinzel", "Songti SC", "Noto Serif SC", "STSong", serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* 尺寸 */
+  --gutter: 16px;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --arch: 50% 50% 16px 16px / 24px 24px 16px 16px;
+  --tabbar-h: 56px;
+  --rail-w: 92px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --top-offset: 0px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+body[data-env="toy-app"] { --top-offset: 44px; }

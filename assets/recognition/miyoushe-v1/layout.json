@@ -1,0 +1,155 @@
+{
+  "profile": "miyoushe-box-v1",
+  "coordinateConvention": "reference pixels; rect = [x, y, width, height]; round = Math.round",
+  "reference": {
+    "width": 1080,
+    "height": 7616
+  },
+  "workingWidth": 540,
+  "aspectRatioRelativeTolerance": 0.01,
+  "grid": {
+    "columns": 3,
+    "rows": 8,
+    "cardCount": 22,
+    "firstSlot": [
+      46,
+      362
+    ],
+    "columnStep": 337,
+    "rowStep": 879,
+    "slotFrameRect": [
+      0,
+      0,
+      312,
+      780
+    ],
+    "missingRectInSlot": [
+      48,
+      148,
+      220,
+      180
+    ],
+    "twoRectInSlot": [
+      246,
+      45,
+      38,
+      46
+    ],
+    "badgeRectInSlot": [
+      229,
+      36,
+      70,
+      70
+    ],
+    "searchRadiusAtWorkingWidth": 3
+  },
+  "layout": {
+    "searchRadiusAtWorkingWidth": 4,
+    "headerRect": [
+      44,
+      280,
+      132,
+      44
+    ],
+    "footerRect": [
+      42,
+      7410,
+      160,
+      180
+    ]
+  },
+  "thresholds": {
+    "missing": {
+      "yesNccMin": 0.92,
+      "yesMaeMax": 0.06,
+      "noNccMax": 0.7,
+      "noMaeMin": 0.1
+    },
+    "two": {
+      "yesNccMin": 0.92,
+      "yesMaeMax": 0.1
+    },
+    "badge": {
+      "presentMaeMax": 0.09,
+      "absentMaeMin": 0.14,
+      "alphaMin": 128
+    },
+    "layout": {
+      "nccMin": 0.9,
+      "maeMax": 0.08
+    }
+  },
+  "thresholdStatus": "single-fixture calibration; browser and additional real exports still required",
+  "templates": {
+    "missing-back": {
+      "file": "missing-back.png",
+      "sourceRect": [
+        94,
+        510,
+        220,
+        180
+      ],
+      "size": [
+        110,
+        90
+      ]
+    },
+    "layout-header": {
+      "file": "layout-header.png",
+      "sourceRect": [
+        44,
+        280,
+        132,
+        44
+      ],
+      "size": [
+        66,
+        22
+      ]
+    },
+    "layout-footer": {
+      "file": "layout-footer.png",
+      "sourceRect": [
+        42,
+        7410,
+        160,
+        180
+      ],
+      "size": [
+        80,
+        90
+      ]
+    },
+    "badge-ring": {
+      "file": "badge-ring.png",
+      "sourceRect": [
+        949,
+        1277,
+        70,
+        70
+      ],
+      "size": [
+        35,
+        35
+      ]
+    },
+    "count-two": {
+      "file": "count-two.png",
+      "size": [
+        38,
+        46
+      ],
+      "matchSize": [
+        19,
+        23
+      ],
+      "source": "user-provided exact crop, pixels preserved",
+      "referenceRect": [
+        966,
+        1286,
+        38,
+        46
+      ]
+    }
+  }
+}

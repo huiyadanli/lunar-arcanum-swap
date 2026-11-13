@@ -1,0 +1,128 @@
+<!-- 交换（设计文档 6.5） -->
+<section class="page page-trade" x-show="route === 'trade' && !param" x-cloak>
+  <header class="page-head"><h1 x-text="t('trade.title')"></h1></header>
+
+  <!-- 空状态 -->
+  <div class="empty" x-show="!listing && !matches.length">
+    <div class="empty-moon" aria-hidden="true">
+      <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.12)" class="moon-lit"/></svg>
+    </div>
+    <b x-text="t('trade.emptyTitle')"></b>
+    <p x-text="t('trade.emptyDesc')"></p>
+    <button class="btn btn-primary" @click="go('box')" x-text="t('trade.goBox')"></button>
+  </div>
+
+  <!-- 等待中：星轨升级为双向共鸣星门；两侧只展示实际发布的给出 / 想要卡牌。 -->
+  <template x-if="listing">
+    <div class="waiting resonance" :class="{ 'is-searching': busy }">
+      <div class="resonance-header">
+        <span class="resonance-kicker">LUNAR CONNECTION</span>
+        <h2 x-text="t('trade.channel')"></h2>
+        <p x-text="t('trade.channelDesc')"></p>
+      </div>
+      <div class="resonance-scene" aria-hidden="true">
+        <div class="resonance-grid"></div>
+        <div class="resonance-beam beam-give"></div><div class="resonance-beam beam-want"></div>
+        <div class="resonance-stream stream-give"><i></i><i></i><i></i></div>
+        <div class="resonance-stream stream-want"><i></i><i></i><i></i></div>
+        <div class="resonance-deck deck-give">
+          <template x-for="(id, i) in Object.keys(listing.give).slice(0, 3)" :key="id">
+            <img :src="card(id).img.m" alt="" :style="`--i:${i}; --card-color:${card(id).color}`">
+          </template>
+          <span x-text="t('trade.give')"></span>
+        </div>
+        <div class="resonance-gate">
+          <div class="gate-halo"></div><div class="gate-ring gate-ring-outer"></div><div class="gate-ring gate-ring-inner"></div>
+          <div class="gate-core"><svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.68)" class="moon-lit"/></svg></div>
+          <span class="gate-spark">✦</span>
+        </div>
+        <div class="resonance-deck deck-want">
+          <template x-for="(id, i) in listing.want.slice(0, 3)" :key="id">
+            <img :src="card(id).img.m" alt="" :style="`--i:${i}; --card-color:${card(id).color}`">
+          </template>
+          <span x-text="t('trade.want')"></span>
+        </div>
+      </div>
+      <div class="resonance-status" role="status"><span class="signal-dot" aria-hidden="true"></span><p class="waiting-title" x-text="t(busy ? 'trade.signalBusy' : 'trade.waiting')"></p><span class="signal-ellipsis" aria-hidden="true"><i></i><i></i><i></i></span></div>
+      <p class="hint center" x-text="t('trade.poolStat', { server: serverName(serverKey), n: poolStats.waiting })"></p>
+      <p class="resonance-note" x-text="t('trade.signal')"></p>
+      <ol class="resonance-steps">
+        <li class="is-complete"><svg class="icon icon-xs" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('trade.requestReady')"></span></li>
+        <li class="is-current" aria-current="step"><span class="signal-dot" aria-hidden="true"></span><span x-text="t('trade.finding')"></span></li>
+        <li><span class="step-node" aria-hidden="true"></span><span x-text="t('trade.connected')"></span></li>
+      </ol>
+      <p class="hint center gold" x-show="listing.want.length" x-text="listing.want.length ? t('trade.scarce', { card: cardName(listing.want[0]) }) : ''"></p>
+    </div>
+  </template>
+
+  <!-- 我的换牌需求 -->
+  <template x-if="listing">
+    <div class="panel">
+      <div class="panel-head"><b x-text="t('trade.myListing')"></b><span class="pill" x-text="t('status.waiting')"></span></div>
+      <div class="listing-line">
+        <div class="chips-row">
+          <template x-for="(q, id) in listing.give" :key="'lg' + id">
+            <span class="chip-wrap"><img class="chip-card" :src="card(id).img.s" alt=""><i x-show="q > 1" x-text="'×' + q"></i></span>
+          </template>
+        </div>
+        <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+        <div class="chips-row">
+          <template x-for="id in listing.want" :key="'lw' + id">
+            <img class="chip-card want" :src="card(id).img.s" alt="">
+          </template>
+        </div>
+      </div>
+      <p class="hint" x-show="listing.note"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> <span x-text="noteText(listing.note)"></span></p>
+      <div class="row-btns">
+        <button class="btn btn-ghost sm namecard-action" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg><span x-text="t('namecard.entry')"></span></button>
+        <button class="btn btn-ghost sm" @click="go('box')" x-text="t('trade.edit')"></button>
+        <button class="btn btn-ghost sm" @click="withdraw()" x-text="t('trade.withdraw')"></button>
+        <button class="btn btn-ghost sm" :disabled="!quotaLeft || busy" @click="rematch()"
+                x-text="quotaLeft ? t('trade.rematchLeft', { n: quotaLeft }) : t('trade.rematch') + ' · ' + t('trade.resetIn', { time: timeLeft(resetAt) })"></button>
+      </div>
+      <!-- 通知：独立站 Web Push；Toy 内提示回访 + 邀请 -->
+      <div class="notify-row" x-show="platform.env === 'standalone'">
+        <span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bell"></use></svg> <span x-text="t('trade.notify')"></span></span>
+        <button class="switch" :class="{ on: notify }" @click="notify = !notify" role="switch" :aria-checked="notify"><i></i></button>
+      </div>
+      <div class="notify-row" x-show="platform.env !== 'standalone'">
+        <span class="hint" x-text="t('trade.notifyToy')"></span>
+        <button class="btn btn-ghost sm" x-show="platform.env === 'toy-app'" @click="invite()" x-text="t('trade.invite')"></button>
+      </div>
+    </div>
+  </template>
+
+  <!-- 待完成的交换 -->
+  <div class="panel" x-show="activeMatches.length">
+    <div class="panel-head"><b x-text="t('trade.active')"></b></div>
+    <template x-for="m in activeMatches" :key="m.id">
+      <button class="match-row" @click="go('trade/' + m.id)" :class="{ fresh: m.status === 'matched' && !m.revealed }">
+        <div class="match-pairs">
+          <template x-for="(p, i) in m.pairs" :key="i">
+            <span class="pair-mini"><img :src="card(p.give).img.s" alt=""><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><img :src="card(p.get).img.s" alt=""></span>
+          </template>
+        </div>
+        <div class="match-meta">
+          <span class="uid-mono" x-text="m.partner.uidMasked"></span>
+          <span class="pill" :class="'st-' + matchStatus(m)" x-text="t('status.' + matchStatus(m))"></span>
+        </div>
+        <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+      </button>
+    </template>
+  </div>
+
+  <!-- 历史 -->
+  <div class="panel" x-show="historyMatches.length">
+    <div class="panel-head"><b x-text="t('trade.history')"></b></div>
+    <template x-for="m in historyMatches" :key="m.id">
+      <div class="history-row">
+        <span class="hint" x-text="dateStr(m.createdAt)"></span>
+        <span class="uid-mono" x-text="m.partner.uidMasked"></span>
+        <span class="pair-mini small">
+          <template x-for="(p, i) in m.pairs" :key="i"><img :src="card(p.get).img.s" alt=""></template>
+        </span>
+        <span class="pill" :class="'st-' + m.status" x-text="t('status.' + m.status)"></span>
+      </div>
+    </template>
+  </div>
+</section>

@@ -1,0 +1,918 @@
+// M0 原型入口：插入构建时打包的页面片段 → 初始化平台 → 启动 Alpine。
+// 业务状态集中在 app() 组件里；后端为 mock/api.js 模拟。
+
+import Alpine from './vendor/alpine-3.14.1.esm.js';
+import { CARDS, CARD_BY_ID, CARD_COUNT } from './data/cards.js';
+import { translate, detectLang, LANGS } from './i18n.js';
+import { resolveUid, maskUid, groupUid, SERVERS } from './lib/uid.js';
+import { storage } from './lib/storage.js';
+import { encodeBox, decodeBox } from './lib/box-code.js';
+import { renderExchangeCard } from './lib/exchange-card.js';
+import { platform, copyText } from './platform/index.js';
+import { api } from './mock/api.js';
+import { dev, setDev } from './mock/dev.js';
+import { toyUi } from './mock/toy-sdk.js';
+import { detectTier, watchLowFps } from './fx/perf.js';
+import { startStars } from './fx/stars.js';
+import { tiltDirective, decodeText, burst, moonPath, playReveal } from './fx/effects.js';
+import { cardShowcase } from './fx/showcase.js';
+import welcomeHtml from './partials/welcome.html?raw';
+import boxHtml from './partials/box.html?raw';
+import tradeHtml from './partials/trade.html?raw';
+import matchHtml from './partials/match.html?raw';
+import meHtml from './partials/me.html?raw';
+import sheetsHtml from './partials/sheets.html?raw';
+import overlaysHtml from './partials/overlays.html?raw';
+
+const PARTIALS = [welcomeHtml, boxHtml, tradeHtml, matchHtml, meHtml, sheetsHtml, overlaysHtml];
+const ROUTES = ['welcome', 'box', 'trade', 'me'];
+const ACTIVE = ['matched', 'confirming'];
+const PRESET_KEYS = ['online_tonight', 'anytime', 'weekday_night', 'weekend', 'note_trade'];
+const REASONS = ['no_friend', 'no_response', 'no_card', 'changed_mind', 'self', 'other'];
+
+const rid4 = () => Math.random().toString(16).slice(2, 6).toUpperCase();
+
+function app() {
+  const saved = storage.get('state', {});
+  return {
+    // ---------- 常量 ----------
+    cards: CARDS,
+    langs: LANGS,
+    servers: SERVERS,
+    presetKeys: PRESET_KEYS,
+    reasons: REASONS,
+    dev,
+    platform,
+
+    // ---------- 持久化状态 ----------
+    lang: saved.lang || detectLang(),
+    fxPref: saved.fxPref || 'auto',
+    fxAuto: saved.fxAuto || null,
+    keep: saved.keep ?? 1,
+    uid: saved.uid || '',
+    onboarded: !!saved.onboarded,
+    mode: saved.mode || 'quick',
+    counts: saved.counts || Array(CARD_COUNT).fill(0),
+    wantOff: saved.wantOff || [],
+    quick: saved.quick || { give: {}, want: [] },
+    profile: saved.profile || null,
+    profileDeclined: !!saved.profileDeclined,
+    anonTag: saved.anonTag || rid4(),
+    session: saved.session ? { token: saved.session.token, accountType: saved.session.accountType } : null,
+    notify: !!saved.notify,
+
+    // ---------- 运行时状态 ----------
+    ready: false,
+    route: 'box',
+    param: null,
+    onboardStep: 0,
+    onboardHint: null,
+    uidInput: '',
+    fx: 'high',
+    sheet: null,
+    sheetData: {},
+    filter: 'all',
+    batch: false,
+    quickTab: 'give',
+    listing: null,
+    matches: [],
+    quotaLeft: 1,
+    resetAt: 0,
+    completedCount: 0,
+    toasts: [],
+    revealing: null,
+    platformDialog: null,
+    syncState: 'synced',
+    note: { text: '', preset: null, status: null },
+    followCache: null,
+    authorInfo: null,
+    uidPeek: false,
+    busy: false,
+    accountType: 'anon',
+    loginHint: false,
+    loginHintClosed: false,
+    fanCards: [17, 18, 21, 6, 22],
+    boxCode: '',
+    boxImportInput: '',
+    boxImportPreview: null,
+    boxImportError: null,
+    qrSrc: null,
+    namecard: null,
+    _namecardRevision: 0,
+    wide: matchMedia('(min-width: 1024px)').matches,
+    _press: null,
+    _dialogResolve: null,
+    _syncTimer: 0,
+    _touchX: null,
+
+    // ====================================================================
+    async init() {
+      this.applyFx(this.fxPref === 'auto' ? this.fxAuto || 'high' : this.fxPref);
+      this.stars = startStars(document.getElementById('stars'));
+      if (this.fxPref === 'auto' && !this.fxAuto) {
+        detectTier().then((tier) => {
+          this.fxAuto = tier;
+          if (this.fxPref === 'auto') this.applyFx(tier);
+        });
+      }
+      watchLowFps(() => {
+        if (this.fxPref === 'auto' && this.fx === 'high') {
+          this.fxAuto = 'lite';
+          this.applyFx('lite');
+          this.toast(this.t('fx.downgraded'));
+        }
+      });
+      matchMedia('(min-width: 1024px)').addEventListener('change', (e) => (this.wide = e.matches));
+
+      // 模拟 SDK 的平台 UI 钩子
+      toyUi.confirmProfile = () => new Promise((res) => {
+        this.platformDialog = 'profile';
+        this._dialogResolve = res;
+      });
+      toyUi.openSpace = () => new Promise((res) => {
+        this.platformDialog = 'space';
+        this._dialogResolve = res;
+      });
+      toyUi.notice = (msg) => this.toast(`（模拟）${msg}`);
+
+      await this.setupIdentity();
+      this.platform.onSafeArea((sa) => document.documentElement.style.setProperty('--safe-bottom', `${sa.bottom}px`));
+
+      // 持久化 + 云同步（B站用户）：JSON.stringify 会读取所有嵌套字段，从而建立响应式依赖
+      Alpine.effect(() => {
+        const snap = this.snapshot();
+        const json = JSON.stringify(snap);
+        storage.set('state', JSON.parse(json));
+        this.scheduleCloudSync();
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') this.flushCloudSync();
+        if (document.visibilityState === 'visible' && this.sheet === 'follow') this.recheckFollow(true);
+      });
+
+      window.addEventListener('hashchange', () => this.parseRoute(true));
+      this.parseRoute(false);
+      await this.refresh();
+      this.ready = true;
+    },
+
+    snapshot() {
+      return {
+        lang: this.lang, fxPref: this.fxPref, fxAuto: this.fxAuto, keep: this.keep, uid: this.uid,
+        onboarded: this.onboarded, mode: this.mode,
+        counts: this.counts, wantOff: this.wantOff, quick: this.quick, profile: this.profile,
+        profileDeclined: this.profileDeclined, anonTag: this.anonTag, session: this.session,
+        notify: this.notify,
+      };
+    },
+
+    // ---------- 身份（设计文档 3.3、3.4） ----------
+    async setupIdentity() {
+      if (this.platform.env === 'standalone') {
+        this.accountType = 'anon';
+        return;
+      }
+      const probe = await this.platform.probeLogin();
+      if (!probe.loggedIn) {
+        this.accountType = 'anon';
+        this.loginHint = true;
+        return;
+      }
+      this.accountType = 'bili';
+      const s = await api.createSession('bili', probe.cred);
+      if (!probe.cred && s.credential) {
+        try {
+          await this.platform.cloud.set({ cred: s.credential });
+        } catch {
+          this.syncState = 'error';
+        }
+      }
+      this.session = { token: s.token, accountType: 'bili' };
+      // 从云端恢复（新设备场景）
+      try {
+        const cloud = await this.platform.cloud.get(['box', 'quick', 'prefs', 'sync']);
+        const cloudAt = JSON.parse(cloud.sync || '{}').at || 0;
+        const localAt = storage.get('syncAt', 0);
+        if (cloud.box && cloudAt > localAt) this.applyCloud(cloud);
+      } catch {
+        this.syncState = 'error';
+      }
+    },
+
+    applyCloud(cloud) {
+      const [, nums, keep] = cloud.box.split('|');
+      const arr = nums.split(',').map(Number);
+      if (arr.length === CARD_COUNT) this.counts = arr;
+      this.keep = Number(keep) || 1;
+      if (cloud.quick) this.quick = JSON.parse(cloud.quick);
+      if (cloud.prefs) {
+        const p = JSON.parse(cloud.prefs);
+        Object.assign(this, { lang: p.lang ?? this.lang, uid: p.uid ?? this.uid, onboarded: p.onboarded ?? this.onboarded, mode: p.mode ?? this.mode });
+      }
+    },
+
+    scheduleCloudSync() {
+      if (this.accountType !== 'bili') return;
+      clearTimeout(this._syncTimer);
+      this._syncTimer = setTimeout(() => this.flushCloudSync(), 5000);
+    },
+
+    async flushCloudSync() {
+      if (this.accountType !== 'bili') return;
+      clearTimeout(this._syncTimer);
+      this.syncState = 'syncing';
+      const at = Date.now();
+      try {
+        await this.platform.cloud.set({
+          box: `v1|${this.counts.join(',')}|${this.keep}`,
+          quick: JSON.stringify(this.quick),
+          prefs: JSON.stringify({ lang: this.lang, uid: this.uid, onboarded: this.onboarded, mode: this.mode }),
+          sync: JSON.stringify({ at }),
+        });
+        storage.set('syncAt', at);
+        this.syncState = 'synced';
+      } catch {
+        this.syncState = 'error';
+      }
+    },
+
+    async useBiliProfile() {
+      const p = await this.platform.getProfile();
+      if (p) {
+        this.profile = { nickname: p.nickname, avatar: p.avatar };
+        this.toast(this.t('welcome.biliLinked'));
+      } else {
+        this.profileDeclined = true;
+      }
+    },
+
+    resolveDialog(value) {
+      const r = this._dialogResolve;
+      this._dialogResolve = null;
+      this.platformDialog = null;
+      if (r) r(value);
+    },
+
+    // ---------- i18n / 工具 ----------
+    t(key, vars) {
+      return translate(this.lang, key, vars);
+    },
+    cardName(id) {
+      return CARD_BY_ID[id].name[this.lang === 'en' ? 'en' : 'zh-CN'];
+    },
+    card(id) {
+      return CARD_BY_ID[id];
+    },
+    serverName(key) {
+      return key ? SERVERS[key].name[this.lang === 'en' ? 'en' : 'zh-CN'] : '—';
+    },
+    mask: maskUid,
+    group: groupUid,
+    moonPath,
+    timeLeft(ts) {
+      const ms = Math.max(0, ts - Date.now());
+      const h = Math.floor(ms / 3600e3);
+      const m = Math.floor((ms % 3600e3) / 60e3);
+      return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+    },
+    dateStr(ts) {
+      return new Intl.DateTimeFormat(this.lang, { month: 'numeric', day: 'numeric' }).format(ts);
+    },
+    applyFx(tier) {
+      this.fx = tier;
+      document.documentElement.dataset.fx = tier;
+      this.stars?.refresh();
+    },
+    setFxPref(p) {
+      this.fxPref = p;
+      this.applyFx(p === 'auto' ? this.fxAuto || 'high' : p);
+    },
+    toast(msg, opts = {}) {
+      const id = Math.random();
+      this.toasts.push({ id, msg, ...opts });
+      setTimeout(() => this.dismissToast(id), opts.ms || 2600);
+    },
+    dismissToast(id) {
+      this.toasts = this.toasts.filter((x) => x.id !== id);
+    },
+    async copy(text) {
+      if (await copyText(text)) this.toast(this.t('common.copied'));
+    },
+
+    // ---------- 路由 ----------
+    parseRoute(animate) {
+      const [r, p] = location.hash.replace(/^#\/?/, '').split('/');
+      let route = ROUTES.includes(r) ? r : this.onboarded ? 'box' : 'welcome';
+      if (!this.onboarded && route !== 'welcome') route = 'welcome';
+      if (this.onboarded && route === 'welcome' && !this.onboardStep) route = 'box';
+      const apply = () => {
+        this.route = route;
+        this.param = p || null;
+        this.sheet = null;
+        window.scrollTo(0, 0);
+      };
+      if (animate && document.startViewTransition && this.fx !== 'off' && document.visibilityState === 'visible') {
+        // 回调同步执行：Alpine 的 DOM 更新在微任务里完成，早于浏览器截取新画面
+        const vt = document.startViewTransition(apply);
+        [vt.ready, vt.finished, vt.updateCallbackDone].forEach((p) => p?.catch(() => {}));
+      } else apply();
+    },
+    go(path) {
+      const target = `#/${path}`;
+      if (location.hash === target) this.parseRoute(false);
+      else location.hash = target;
+    },
+
+    // ---------- 引导（设计文档 5.1） ----------
+    get uidState() {
+      return resolveUid(this.uidInput);
+    },
+    get serverKey() {
+      return this.serverKeyOf(this.uid);
+    },
+    serverKeyOf(uid) {
+      return resolveUid(uid).server || null;
+    },
+    startOnboarding() {
+      this.uidInput = this.uid;
+      this.onboardStep = 1;
+    },
+    onUidInput(e) {
+      this.uidInput = e.target.value.replace(/\D/g, '').slice(0, 10);
+      e.target.value = groupUid(this.uidInput);
+    },
+    get uidReady() {
+      return this.uidState.state === 'ok';
+    },
+    confirmUid() {
+      if (!this.uidReady) return;
+      this.uid = this.uidInput;
+      if (this.onboardStep === 1) this.onboardStep = 2;
+      else this.sheet = null;
+    },
+    chooseMode(mode) {
+      this.mode = mode;
+      this.onboarded = true;
+      this.onboardStep = 0;
+      this.onboardHint = mode;
+      this.go('box');
+    },
+    // ---------- Box 计算（设计文档 2.3） ----------
+    get activeMatches() {
+      return this.matches.filter((m) => ACTIVE.includes(m.status));
+    },
+    get historyMatches() {
+      return this.matches.filter((m) => !ACTIVE.includes(m.status));
+    },
+    lockedGive(id) {
+      return this.activeMatches.reduce((n, m) => n + m.pairs.filter((p) => p.give === id).length, 0);
+    },
+    lockedGet(id) {
+      return this.activeMatches.some((m) => m.pairs.some((p) => p.get === id));
+    },
+    count(id) {
+      return this.counts[id - 1];
+    },
+    spare(id) {
+      return Math.max(0, this.count(id) - this.keep - this.lockedGive(id));
+    },
+    get ownedCount() {
+      return this.counts.filter((c) => c > 0).length;
+    },
+    get missingCount() {
+      return CARD_COUNT - this.ownedCount;
+    },
+    get spareTotal() {
+      return CARDS.reduce((n, c) => n + this.spare(c.id), 0);
+    },
+    get totalCount() {
+      return this.counts.reduce((a, b) => a + b, 0);
+    },
+    tileState(id) {
+      if (this.lockedGive(id) || this.lockedGet(id)) return 'locked';
+      const c = this.count(id);
+      if (c === 0) return 'missing';
+      return c > this.keep ? 'spare' : 'owned';
+    },
+    get visibleCards() {
+      if (this.mode !== 'full' || this.filter === 'all') return CARDS;
+      if (this.filter === 'missing') return CARDS.filter((c) => this.count(c.id) === 0);
+      return CARDS.filter((c) => this.spare(c.id) > 0);
+    },
+    wanted(id) {
+      return this.count(id) === 0 && !this.wantOff.includes(id);
+    },
+    get giveMap() {
+      if (this.mode === 'quick') return { ...this.quick.give };
+      const out = {};
+      CARDS.forEach((c) => {
+        const s = this.spare(c.id);
+        if (s > 0) out[c.id] = s;
+      });
+      return out;
+    },
+    get wantList() {
+      const list = this.mode === 'quick' ? this.quick.want : CARDS.filter((c) => this.wanted(c.id)).map((c) => c.id);
+      return list.filter((id) => !this.lockedGet(id));
+    },
+    get giveTotal() {
+      return Object.values(this.giveMap).reduce((a, b) => a + b, 0);
+    },
+    get giveIds() {
+      return Object.keys(this.giveMap).map(Number);
+    },
+    get listingDirty() {
+      if (!this.listing) return false;
+      const norm = (g, w) => JSON.stringify([Object.entries(g).filter(([, q]) => q > 0).sort(), [...w].sort()]);
+      return norm(this.listing.give, this.listing.want) !== norm(this.giveMap, this.wantList);
+    },
+    get publishBlocker() {
+      if (!this.giveTotal) return this.mode === 'full' ? this.t('box.noSpare') : this.t('box.noWant');
+      if (!this.wantList.length) return this.mode === 'full' && this.ownedCount === CARD_COUNT ? this.t('box.completeDesc') : this.t('box.noWant');
+      return null;
+    },
+
+    // ---------- Box 编辑 ----------
+    setCount(id, v, evt) {
+      const before = this.count(id);
+      const next = Math.max(0, Math.min(99, v));
+      if (next === before) return;
+      if (next < this.lockedGive(id) + (this.lockedGive(id) ? this.keep : 0)) {
+        this.toast(this.t('box.tagLocked'));
+        return;
+      }
+      this.counts[id - 1] = next;
+      const el = evt && (evt.currentTarget || evt.target);
+      if (before === 0 && next > 0 && el?.getBoundingClientRect) {
+        const r = (el.closest('[data-burst]') || el).getBoundingClientRect();
+        burst(r.left + r.width / 2, r.top + r.height / 2, CARD_BY_ID[id].color);
+      }
+      if (this.ownedCount === CARD_COUNT && before === 0) this.toast(this.t('match.fullMoon'));
+    },
+    toggleWant(id) {
+      if (this.count(id) > 0) {
+        this.toast(this.t('box.ownedCantWant'));
+        return;
+      }
+      this.wantOff = this.wantOff.includes(id) ? this.wantOff.filter((x) => x !== id) : [...this.wantOff, id];
+    },
+    openCard(id) {
+      this.sheetData = { id };
+      this.sheet = 'card';
+    },
+    sheetStep(dir) {
+      const ids = this.visibleCards.map((c) => c.id);
+      const i = ids.indexOf(this.sheetData.id);
+      this.sheetData = { id: ids[(i + dir + ids.length) % ids.length] };
+    },
+    touchStart(e) {
+      this._touchX = e.touches[0].clientX;
+    },
+    touchEnd(e) {
+      if (this._touchX == null) return;
+      const dx = e.changedTouches[0].clientX - this._touchX;
+      this._touchX = null;
+      if (Math.abs(dx) > 50) this.sheetStep(dx < 0 ? 1 : -1);
+    },
+
+    // 长按：步进器连续加减；快速模式长按移除
+    holdStart(fn) {
+      this.holdStop();
+      fn();
+      const t = setTimeout(() => {
+        this._press = setInterval(fn, 90);
+      }, 420);
+      this._press = t;
+    },
+    holdStop() {
+      clearTimeout(this._press);
+      clearInterval(this._press);
+      this._press = null;
+    },
+    tileDown(id) {
+      if (this.mode !== 'quick') return;
+      this._longFired = false;
+      clearTimeout(this._lp);
+      this._lp = setTimeout(() => {
+        this._longFired = true;
+        if (this.quick.give[id]) {
+          const g = { ...this.quick.give };
+          delete g[id];
+          this.quick.give = g;
+          navigator.vibrate?.(12);
+        } else if (this.quick.want.includes(id)) this.quick.want = this.quick.want.filter((x) => x !== id);
+      }, 520);
+    },
+    tileUp() {
+      clearTimeout(this._lp);
+    },
+    tileClick(id, evt) {
+      if (this._longFired) {
+        this._longFired = false;
+        return;
+      }
+      if (this.mode === 'full') {
+        if (!this.batch) this.openCard(id);
+        return;
+      }
+      if (this.lockedGive(id) || this.lockedGet(id)) {
+        this.toast(this.t('box.tagLocked'));
+        return;
+      }
+      if (this.quickTab === 'give') {
+        if (this.quick.want.includes(id)) return this.toast(this.t('box.inWant'));
+        const q = this.quick.give[id] || 0;
+        this.quick.give = { ...this.quick.give, [id]: Math.min(9, q + 1) };
+        if (!q) burst(evt.clientX, evt.clientY, CARD_BY_ID[id].color, 8);
+      } else {
+        if (this.quick.give[id]) return this.toast(this.t('box.inGive'));
+        const has = this.quick.want.includes(id);
+        this.quick.want = has ? this.quick.want.filter((x) => x !== id) : [...this.quick.want, id];
+        if (!has) burst(evt.clientX, evt.clientY, '#E9C77B', 8);
+      }
+    },
+
+    // ---------- 发布（设计文档 6.3.3） ----------
+    openPublish() {
+      if (this.publishBlocker || this.listing) return;
+      this.note = { text: '', preset: null, status: null };
+      this.sheet = 'publish';
+    },
+    async doPublish(withoutNote = false) {
+      if (this.busy) return;
+      let note = null;
+      if (!withoutNote) {
+        if (this.accountType === 'bili' && this.note.text.trim()) {
+          this.note.status = 'checking';
+          const r = await this.platform.checkText(this.note.text.trim(), 'trade_note');
+          if (r !== 'ok') {
+            this.note.status = r;
+            return;
+          }
+          note = { text: this.note.text.trim() };
+        } else if (this.note.preset) note = { preset: this.note.preset };
+      }
+      this.busy = true;
+      try {
+        if (!this.session) {
+          const s = await api.createSession('anon');
+          this.session = { token: s.token, accountType: 'anon' };
+        }
+        const res = await api.publish({ give: this.giveMap, want: this.wantList, note, server: this.serverKey, mode: this.mode });
+        this.onboardHint = null;
+        await this.refresh();
+        this.sheet = null;
+        this.go('trade');
+        if (res.matches.length) {
+          await this.playMatch(res.matches[0]);
+          this.go(`trade/${res.matches[0].id}`);
+        }
+      } catch (e) {
+        this.toast(e.code === 'DAILY_LIMIT' ? this.t('publish.quotaUsed', { time: this.timeLeft(e.retryAt) }) : String(e.code || e.message));
+      } finally {
+        this.busy = false;
+      }
+    },
+    async syncListing() {
+      await api.editListing({ give: this.giveMap, want: this.wantList, note: this.listing.note });
+      await this.refresh();
+      this.toast(this.t('common.done'));
+    },
+
+    // ---------- 交换（设计文档 5.3–5.5、6.5） ----------
+    async refresh() {
+      if (!this.serverKey) return;
+      const s = await api.getState(this.serverKey);
+      Object.assign(this, { listing: s.listing, matches: s.matches, quotaLeft: s.quotaLeft, resetAt: s.resetAt, completedCount: s.completedCount });
+    },
+    get newMatchCount() {
+      return this.matches.filter((m) => m.status === 'matched' && !m.revealed).length;
+    },
+    get currentMatch() {
+      return this.matches.find((m) => m.id === this.param) || null;
+    },
+    matchStatus(m) {
+      if (m.status === 'matched') return m.revealed ? 'trading' : 'matched';
+      return m.status;
+    },
+    noteText(note) {
+      if (!note) return '';
+      return note.text || this.t(`presets.${note.preset}`);
+    },
+    get poolStats() {
+      return api.stats(this.serverKey);
+    },
+    async playMatch(m) {
+      this.revealing = { give: m.pairs[0].give, get: m.pairs[0].get, n: m.pairs.length };
+      await Alpine.nextTick();
+      await playReveal(document.querySelector('.reveal'));
+      this.revealing = null;
+    },
+    async withdraw() {
+      await api.withdraw();
+      await this.refresh();
+      this.toast(this.t('trade.withdrawn'));
+    },
+    async rematch() {
+      if (!this.quotaLeft || this.busy) return;
+      this.busy = true;
+      try {
+        const r = await api.rematch(this.serverKey);
+        await this.refresh();
+        if (r.matches.length) {
+          await this.playMatch(r.matches[0]);
+          this.go(`trade/${r.matches[0].id}`);
+        } else this.toast(this.t('trade.waiting'));
+      } catch (e) {
+        this.toast(String(e.code));
+      } finally {
+        this.busy = false;
+      }
+    },
+    async invite() {
+      const r = await this.platform.share({ path: 'index.html#/welcome', title: this.t('app.name'), text: this.t('app.tagline') });
+      if (r === 'copied') this.toast(this.t('common.copied'));
+    },
+
+    // 开始交换：B站用户先检查关注（5.5），失败或无法判断时放行
+    async startTrade(m) {
+      if (this.busy) return;
+      if (this.accountType === 'bili' && this.platform.can('follow') && this.followCache !== true) {
+        this.busy = true;
+        const f = await this.platform.author.isFollowing();
+        this.busy = false;
+        if (f === false) {
+          this.sheetData = { matchId: m.id };
+          this.sheet = 'follow';
+          if (!this.authorInfo) this.platform.author.profile().then((p) => (this.authorInfo = p));
+          return;
+        }
+        this.followCache = f;
+      }
+      await this.revealUid(m.id);
+    },
+    async revealUid(id) {
+      this.busy = true;
+      try {
+        await api.reveal(id);
+        await this.refresh();
+        await Alpine.nextTick();
+        const m = this.matches.find((x) => x.id === id);
+        const el = document.getElementById('uid-full');
+        if (el && m?.partner.uid) await decodeText(el, groupUid(m.partner.uid));
+      } finally {
+        this.busy = false;
+      }
+    },
+    async goFollow() {
+      await this.platform.author.openSpace();
+      await this.recheckFollow(true);
+    },
+    async recheckFollow(silent = false) {
+      const f = await this.platform.author.isFollowing();
+      if (f === false) {
+        if (!silent) this.toast(this.t('follow.notYet'));
+        return;
+      }
+      this.followCache = true;
+      const id = this.sheetData.matchId;
+      this.sheet = null;
+      if (id) await this.revealUid(id);
+    },
+    async followFromMe() {
+      if (this.followCache === true) return;
+      await this.platform.author.openSpace();
+      const f = await this.platform.author.isFollowing();
+      if (f !== false) this.followCache = true;
+    },
+    tradeMsg(m) {
+      const gives = m.pairs.map((p) => this.cardName(p.give));
+      const gets = m.pairs.map((p) => this.cardName(p.get));
+      const fmt = (arr) => (this.lang === 'en' ? arr.join(', ') : arr.map((n) => `「${n}」`).join(''));
+      return this.t('match.msg', { give: fmt(gives), get: fmt(gets) });
+    },
+    openDone(m) {
+      if (m.pairs.length > 1) {
+        this.sheetData = { matchId: m.id, sel: m.pairs.map((_, i) => i) };
+        this.sheet = 'done';
+      } else this.confirmDone(m.id, [0]);
+    },
+    toggleSel(i) {
+      const sel = this.sheetData.sel;
+      this.sheetData.sel = sel.includes(i) ? sel.filter((x) => x !== i) : [...sel, i].sort();
+    },
+    async confirmDone(id, sel) {
+      const m = this.matches.find((x) => x.id === id);
+      if (!m || !sel.length) return;
+      const res = await api.confirm(id, { result: 'completed', completedPairs: sel });
+      const before = { counts: [...this.counts], quick: JSON.parse(JSON.stringify(this.quick)) };
+      const done = sel.map((i) => m.pairs[i]);
+      const wasComplete = this.ownedCount === CARD_COUNT;
+      for (const p of done) {
+        if (this.mode === 'full') {
+          this.counts[p.give - 1] = Math.max(0, this.counts[p.give - 1] - 1);
+          this.counts[p.get - 1] += 1;
+        } else {
+          const g = { ...this.quick.give };
+          g[p.give] = (g[p.give] || 1) - 1;
+          if (g[p.give] <= 0) delete g[p.give];
+          this.quick.give = g;
+          this.quick.want = this.quick.want.filter((x) => x !== p.get);
+        }
+      }
+      this.sheet = null;
+      await this.refresh();
+      const changes = done.map((p) => `${this.cardName(p.give)} −1，${this.cardName(p.get)} +1`).join('；');
+      this.toast(this.t('match.boxUpdated', { changes }), {
+        ms: 5000,
+        action: this.t('common.undo'),
+        onAction: () => {
+          this.counts = before.counts;
+          this.quick = before.quick;
+        },
+      });
+      if (res.outcome === 'confirming') setTimeout(() => this.toast(this.t('match.waitPartner')), 600);
+      if (!wasComplete && this.mode === 'full' && this.ownedCount === CARD_COUNT) {
+        burst(innerWidth / 2, innerHeight / 3, '#E9C77B', 12);
+        this.toast(this.t('match.fullMoon'));
+      }
+    },
+    openProblem(m, reason = null) {
+      this.sheetData = { matchId: m.id, reason, note: '' };
+      this.sheet = 'problem';
+    },
+    async submitProblem() {
+      const { matchId, reason, note } = this.sheetData;
+      if (!reason) return;
+      const res = await api.confirm(matchId, { result: 'failed', reason, note });
+      this.sheet = null;
+      await this.refresh();
+      this.toast(this.t(res.outcome === 'back_to_pool' ? 'match.backToPool' : 'match.recordedSelf'), { ms: 3600 });
+    },
+
+    // ---------- 我的 ----------
+    peekUid() {
+      this.uidPeek = true;
+      clearTimeout(this._peekT);
+      this._peekT = setTimeout(() => (this.uidPeek = false), 3000);
+    },
+    editUid() {
+      this.uidInput = this.uid;
+      this.sheet = 'uid';
+    },
+    get displayName() {
+      if (this.accountType === 'bili') return this.profile?.nickname || this.t('me.biliTag') + ' · ' + this.anonTag;
+      return (this.lang === 'en' ? 'Traveler·' : '旅人·') + this.anonTag;
+    },
+    async openQr() {
+      this.qrSrc = await this.platform.qrcode({ path: 'index.html#/box' });
+      if (!this.qrSrc) return this.toast(this.t('namecard.toyUnavailable'));
+      this.sheet = 'qr';
+    },
+
+    // ---------- 交换名片：从当前选牌或已发布需求生成独立快照 ----------
+    async openNamecard(source = 'box') {
+      const request = source === 'listing' ? this.listing : { give: this.giveMap, want: this.wantList };
+      if (!request || !Object.keys(request.give).length || !request.want.length) {
+        return this.toast(this.t('namecard.chooseCards'));
+      }
+      this.namecard = {
+        give: { ...request.give }, want: [...request.want], source,
+        displayName: this.displayName, server: this.serverName(this.serverKey), uid: this.uid, lang: this.lang,
+        createdAt: Date.now(), includeUid: true, site: null, image: null,
+        generating: false, saving: false, error: null,
+      };
+      this.sheet = 'namecard';
+      await this.generateNamecard();
+    },
+    async generateNamecard() {
+      const revision = ++this._namecardRevision;
+      const current = this.namecard;
+      current.generating = true;
+      current.image = null;
+      current.error = null;
+      try {
+        const site = current.site || await this.platform.exchangeSite();
+        const image = await renderExchangeCard({ ...current, site });
+        // 关闭后重新打开或修改选项时，较旧的生成结果不能覆盖新名片。
+        if (revision !== this._namecardRevision) return;
+        current.site = site;
+        current.image = image;
+      } catch (error) {
+        if (revision !== this._namecardRevision) return;
+        current.error = this.t(error?.cause === 'toy_url_unavailable' ? 'namecard.toyUnavailable' : 'namecard.failed');
+      } finally {
+        if (revision === this._namecardRevision) current.generating = false;
+      }
+    },
+    async saveNamecard() {
+      const current = this.namecard;
+      if (!current?.image || current.generating || current.saving) return;
+      current.saving = true;
+      try {
+        const date = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Shanghai' }).format(current.createdAt);
+        const result = await this.platform.saveImage({
+          dataUrl: current.image.dataUrl,
+          name: `lunar-swap-${current.site.kind}-${date}.png`,
+        });
+        this.toast(this.t(result === 'album' ? 'namecard.savedAlbum' : 'namecard.savedDownload'));
+      } catch {
+        this.toast(this.t('namecard.saveFailed'));
+      } finally {
+        current.saving = false;
+      }
+    },
+    exportBox() {
+      try {
+        this.boxCode = encodeBox({ counts: this.counts, keep: this.keep, wantOff: this.wantOff, quick: this.quick, mode: this.mode });
+        this.sheet = 'exportBox';
+      } catch {
+        this.toast(this.t('me.boxExportFailed'));
+      }
+    },
+    openBoxImport() {
+      this.boxImportInput = '';
+      this.boxImportPreview = null;
+      this.boxImportError = null;
+      this.sheet = 'importBox';
+    },
+    previewBoxImport() {
+      this.boxImportPreview = null;
+      this.boxImportError = null;
+      if (!this.boxImportInput.trim()) return;
+      try {
+        this.boxImportPreview = decodeBox(this.boxImportInput);
+      } catch {
+        this.boxImportError = this.t('me.boxInvalid');
+      }
+    },
+    importBox() {
+      if (this.busy || this.activeMatches.length) return;
+      this.previewBoxImport();
+      if (!this.boxImportPreview) return;
+      const box = this.boxImportPreview;
+      Object.assign(this, {
+        counts: [...box.counts], keep: box.keep, wantOff: [...box.wantOff],
+        quick: { give: { ...box.quick.give }, want: [...box.quick.want] }, mode: box.mode,
+      });
+      this.batch = false;
+      this.filter = 'all';
+      this.onboardHint = null;
+      this.boxImportInput = '';
+      this.boxImportPreview = null;
+      this.sheet = null;
+      this.go('box');
+      this.toast(this.t('me.boxImported'));
+    },
+    clearAll() {
+      if (!confirm(this.t('me.clearConfirm'))) return;
+      storage.clearAll();
+      location.hash = '';
+      location.reload();
+    },
+    moons(level) {
+      return '●'.repeat(level) + '○'.repeat(5 - level);
+    },
+
+    // ---------- 原型调试面板 ----------
+    devSet(patch, reload, quiet = false) {
+      Object.assign(this.dev, patch); // 经过响应式代理，面板立即刷新
+      setDev(patch, reload);
+      if (!reload && !quiet) this.toast('已更新调试设置');
+    },
+    async devIncoming() {
+      const m = api.dev.incoming();
+      await this.refresh();
+      this.sheet = null;
+      if (!m) return this.toast('没有可匹配的换牌需求（请先发布需求，或可换的牌已全部匹配）');
+      this.toast(this.t('status.matched'), { action: this.t('match.title'), onAction: async () => {
+        await this.playMatch(m);
+        this.go(`trade/${m.id}`);
+      }, ms: 5000 });
+    },
+    async devPartner(kind) {
+      const m = kind === 'reveal' ? api.dev.partnerReveal() : api.dev.partnerConfirm();
+      await this.refresh();
+      this.sheet = null;
+      this.toast(m ? (kind === 'reveal' ? this.t('match.partnerStarted') : this.t('status.completed')) : '没有待完成的交换');
+    },
+    async devResetQuota() {
+      api.dev.resetQuota();
+      await this.refresh();
+      this.toast('已重置今日次数');
+    },
+  };
+}
+
+async function boot() {
+  document.getElementById('views').innerHTML = PARTIALS.join('\n');
+  await platform.init();
+  Alpine.directive('tilt', tiltDirective);
+  Alpine.data('cardShowcase', cardShowcase);
+  Alpine.data('app', app);
+  window.Alpine = Alpine;
+  Alpine.start();
+}
+
+boot();

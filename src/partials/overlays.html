@@ -1,0 +1,64 @@
+<!-- 全局浮层：Toast、匹配揭晓、模拟的 B站 平台界面、原型调试入口 -->
+
+<!-- Toast -->
+<div class="toasts" aria-live="polite">
+  <template x-for="tt in toasts" :key="tt.id">
+    <div class="toast" x-transition:enter="toast-enter" x-transition:enter-start="toast-from">
+      <span x-text="tt.msg"></span>
+      <button class="link-btn" x-show="tt.action" @click="tt.onAction && tt.onAction(); dismissToast(tt.id)" x-text="tt.action"></button>
+    </div>
+  </template>
+</div>
+
+<!-- 匹配揭晓（6.5.2） -->
+<div class="reveal" x-show="revealing" x-cloak role="dialog" aria-modal="true" :aria-label="t('trade.matchedTitle')">
+  <template x-if="revealing">
+    <div class="reveal-stage">
+      <div class="rv-constellation" aria-hidden="true"><div></div><div></div><div></div></div>
+      <div class="rv-portal rv-portal-left" aria-hidden="true"></div><div class="rv-portal rv-portal-right" aria-hidden="true"></div>
+      <div class="rv-connection" aria-hidden="true"><span>✦</span></div>
+      <div class="rv-ring" aria-hidden="true"></div>
+      <img class="rv-card rv-left" :src="card(revealing.give).img.l" alt="" :style="`--card-color:${card(revealing.give).color}`">
+      <img class="rv-card rv-right" :src="card(revealing.get).img.l" alt="" :style="`--card-color:${card(revealing.get).color}`">
+      <div class="rv-title">
+        <b x-text="t('trade.matchedTitle')"></b>
+        <span class="pair-label"><span x-text="cardName(revealing.give)"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><span x-text="cardName(revealing.get) + (revealing.n > 1 ? ' · ' + t('trade.pairs', { n: revealing.n }) : '')"></span></span>
+      </div>
+      <button type="button" class="rv-skip" x-text="t('trade.tapSkip')"></button>
+    </div>
+  </template>
+</div>
+
+<!-- 模拟：B站 平台的用户资料授权弹窗（getUserProfile 首次调用） -->
+<div class="pf-backdrop" x-show="platformDialog === 'profile'" x-cloak>
+  <div class="pf-dialog">
+    <small class="pf-mock" x-text="t('platform.mockLabel')"></small>
+    <b x-text="t('platform.profileTitle')"></b>
+    <p x-text="t('platform.profileBody')"></p>
+    <div class="pf-btns">
+      <button @click="resolveDialog(false)" x-text="t('platform.deny')"></button>
+      <button class="pf-ok" @click="resolveDialog(true)" x-text="t('platform.allow')"></button>
+    </div>
+  </div>
+</div>
+
+<!-- 模拟：UP主 空间（navigate type=space） -->
+<div class="pf-space" x-show="platformDialog === 'space'" x-cloak>
+  <div class="pf-space-bar">
+    <button @click="resolveDialog()"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg> <span x-text="t('platform.backToToy')"></span></button>
+    <small class="pf-mock" x-text="t('platform.spaceLabel')"></small>
+  </div>
+  <div class="pf-space-head">
+    <div class="pf-avatar">月</div>
+    <div>
+      <b>月下观牌人</b>
+      <small x-text="t('follow.fans', { n: '12,380' })"></small>
+    </div>
+    <button class="pf-follow" :class="{ on: dev.following }" @click="devSet({ following: !dev.following }, false, true)"
+            x-text="dev.following ? t('platform.followedBtn') : t('platform.followBtn')"></button>
+  </div>
+  <div class="pf-space-body"><i></i><i></i><i></i><i></i></div>
+</div>
+
+<!-- 原型调试入口 -->
+<button class="dev-fab" x-show="route !== 'welcome' && !revealing" x-cloak @click="sheet = 'debug'" aria-label="原型调试"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#wrench"></use></svg></button>

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN" data-fx="high">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0D1124">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='44' fill='%231A2042'/%3E%3Cpath d='M50 6a44 44 0 0 1 0 88a30 44 0 0 0 0-88z' fill='%23F1E6C8'/%3E%3C/svg%3E">
+  <meta name="description" content="原神月谕圣牌交换撮合：填 UID、选牌、自动匹配能互换的玩家。">
+  <title>月谕圣牌交换站</title>
+  <link rel="preload" href="assets/fonts/cinzel-600-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="src/styles/tokens.css">
+  <link rel="stylesheet" href="src/styles/base.css">
+  <link rel="stylesheet" href="src/styles/components.css">
+  <link rel="stylesheet" href="src/styles/pages.css">
+  <link rel="stylesheet" href="src/styles/namecard.css">
+  <!-- Toy 包构建时在此注入：<script src="//s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js"></script> -->
+  <script type="module" src="src/main.js"></script>
+</head>
+<body x-data="app" :class="{ 'is-ready': ready, 'is-wide': wide, 'is-welcome': route === 'welcome' }" :data-env="platform.env" :lang="lang">
+  <canvas id="stars" aria-hidden="true"></canvas>
+  <div class="sky-glow" aria-hidden="true"></div>
+
+  <!-- B站 App 容器栏（仅原型演示 toy-app 环境；真实环境由 App 绘制） -->
+  <div class="toy-bar" x-show="platform.env === 'toy-app'" x-cloak>
+    <span class="toy-bar-back"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></span>
+    <span class="toy-bar-title" x-text="t('app.name')"></span>
+    <span class="toy-bar-more"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#more"></use></svg></span>
+    <span class="toy-bar-mock" x-text="t('platform.containerLabel')"></span>
+  </div>
+
+  <div class="shell">
+    <!-- 导航：手机为底部标签栏，PC 为左侧竖排 -->
+    <nav class="nav" x-show="route !== 'welcome'" x-cloak aria-label="主导航">
+      <div class="nav-brand" aria-hidden="true">
+        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.72)" class="moon-lit"/></svg>
+      </div>
+      <a href="#/box" class="nav-item" :class="{ on: route === 'box' }">
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cards"></use></svg>
+        <span x-text="t('nav.box')"></span>
+      </a>
+      <a href="#/trade" class="nav-item" :class="{ on: route === 'trade' }">
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg>
+        <span x-text="t('nav.trade')"></span>
+        <b class="nav-badge" x-show="newMatchCount" x-text="newMatchCount"></b>
+      </a>
+      <a href="#/me" class="nav-item" :class="{ on: route === 'me' }">
+        <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#moon"></use></svg>
+        <span x-text="t('nav.me')"></span>
+      </a>
+    </nav>
+
+    <main id="views"></main>
+  </div>
+
+  <div id="fx-layer" aria-hidden="true"></div>
+</body>
+</html>

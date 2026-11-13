@@ -1,0 +1,273 @@
+<!-- 底部抽屉（BottomSheet）。点击背景或按 Esc 可关闭。 -->
+<div class="sheet-backdrop" x-show="sheet" x-transition.opacity x-cloak
+     @click.self="sheet = null" @keydown.escape.window="sheet && (sheet = null)">
+  <div class="sheet" x-show="sheet" x-transition:enter="sheet-enter" x-transition:enter-start="sheet-from" x-transition:leave="sheet-leave" x-transition:leave-end="sheet-from"
+       :class="{ 'sheet-namecard': sheet === 'namecard' }" :aria-label="sheet === 'namecard' ? t('namecard.title') : null" role="dialog" aria-modal="true">
+    <div class="sheet-grip" aria-hidden="true"></div>
+
+    <!-- 交换名片：高清图片预览即最终导出，默认显示完整 UID，用户可主动隐藏。 -->
+    <template x-if="sheet === 'namecard' && namecard">
+      <div class="namecard-sheet" x-init="$nextTick(() => $el.querySelector('button').focus())">
+        <div class="namecard-heading">
+          <div><small>LUNAR KEEPSAKE</small><h3 class="sheet-title" x-text="t('namecard.title')"></h3></div>
+          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#close"></use></svg></button>
+        </div>
+        <div class="namecard-layout">
+          <div class="namecard-preview" :aria-busy="namecard.generating">
+            <template x-if="namecard.image">
+              <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
+            </template>
+            <div class="namecard-placeholder" x-show="!namecard.image" role="status">
+              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="'assets/icons/ui.svg#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
+              <p x-text="namecard.error || t('namecard.generating')"></p>
+              <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
+            </div>
+          </div>
+          <div class="namecard-options">
+            <p class="namecard-intro" x-text="t('namecard.intro')"></p>
+            <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
+            <label class="check-row namecard-uid">
+              <input type="checkbox" x-model="namecard.includeUid" @change="generateNamecard()" :disabled="namecard.generating || namecard.saving">
+              <span><b x-text="t('namecard.showUid')"></b><small x-text="t('namecard.uidHint')"></small></span>
+            </label>
+            <template x-if="namecard.site">
+              <div class="namecard-destination" :class="{ 'is-bili': namecard.site.kind === 'bili' }">
+                <template x-if="namecard.site.kind === 'bili'">
+                  <div>
+                    <b><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#bilibili"></use></svg><span x-text="t('namecard.biliDestination')"></span></b>
+                    <p x-text="t('namecard.biliHint')"></p>
+                  </div>
+                </template>
+                <a :href="namecard.site.url" target="_blank" rel="noopener noreferrer" x-text="namecard.site.url"></a>
+              </div>
+            </template>
+            <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#download"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
+            <p class="hint center" x-text="t('namecard.saveHint')"></p>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- 卡牌详情：数量编辑（6.3.1） -->
+    <template x-if="sheet === 'card'">
+      <div class="card-sheet" :style="`--card-color:${card(sheetData.id).color}`" @touchstart.passive="touchStart($event)" @touchend="touchEnd($event)">
+        <div class="card-sheet-top">
+          <button class="icon-btn" @click="sheetStep(-1)" aria-label="上一张"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+          <div class="card-large" x-tilt :style="`--mask:url(${new URL(card(sheetData.id).img.m, location.href).href})`">
+            <img :src="card(sheetData.id).img.m" :srcset="`${card(sheetData.id).img.m} 360w, ${card(sheetData.id).img.l} 684w`" sizes="180px" alt="">
+            <div class="sheen" aria-hidden="true"></div>
+          </div>
+          <button class="icon-btn" @click="sheetStep(1)" aria-label="下一张"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></button>
+        </div>
+        <div class="card-sheet-name">
+          <span class="roman" x-text="card(sheetData.id).roman"></span>
+          <b x-text="cardName(sheetData.id)"></b>
+          <small x-text="lang === 'en' ? card(sheetData.id).name.enFull : card(sheetData.id).name.en"></small>
+        </div>
+        <div class="stepper" data-burst>
+          <span x-text="t('box.hold')"></span>
+          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) - 1))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="-1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#minus"></use></svg></button>
+          <b class="roll" x-text="count(sheetData.id)" x-effect="count(sheetData.id); $el.classList.remove('rolling'); void $el.offsetWidth; $el.classList.add('rolling')"></b>
+          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) + 1, $event))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="+1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#plus"></use></svg></button>
+        </div>
+        <div class="card-sheet-meta">
+          <span x-text="t('box.keep') + ' ' + keep"></span>
+          <span class="gold" x-text="t('box.spareN', { n: spare(sheetData.id) })"></span>
+          <span x-show="lockedGive(sheetData.id) || lockedGet(sheetData.id)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
+        </div>
+        <label class="check-row" :class="{ disabled: count(sheetData.id) > 0 }">
+          <input type="checkbox" :checked="wanted(sheetData.id)" :disabled="count(sheetData.id) > 0" @change="toggleWant(sheetData.id)">
+          <span><svg class="icon icon-sm icon-gold" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg> <span x-text="t('box.wantThis')"></span></span>
+        </label>
+        <p class="hint center" x-text="t('box.swipeHint')"></p>
+        <button class="btn btn-primary btn-block" @click="sheet = null" x-text="t('common.done')"></button>
+      </div>
+    </template>
+
+    <!-- 发布确认（6.3.3） -->
+    <template x-if="sheet === 'publish'">
+      <div>
+        <h3 class="sheet-title"><span x-text="t('publish.title')"></span> · <span x-text="serverName(serverKey)"></span></h3>
+        <div class="listing-line">
+          <div class="chips-row">
+            <template x-for="(q, id) in giveMap" :key="'pg' + id">
+              <span class="chip-wrap"><img class="chip-card" :src="card(id).img.s" alt=""><i x-show="q > 1" x-text="'×' + q"></i></span>
+            </template>
+          </div>
+          <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+          <div class="chips-row">
+            <template x-for="id in wantList" :key="'pw' + id"><img class="chip-card want" :src="card(id).img.s" alt=""></template>
+          </div>
+        </div>
+        <label class="field-label" x-text="t('publish.note')"></label>
+        <template x-if="accountType === 'bili'">
+          <div class="note-field" :class="{ 'is-bad': note.status === 'rejected' }">
+            <textarea maxlength="40" rows="2" :placeholder="t('publish.notePlaceholder')" x-model="note.text" @input="note.status = null"></textarea>
+            <span class="counter" x-text="note.text.length + '/40'"></span>
+            <p class="hint is-bad" x-show="note.status === 'rejected'" x-text="t('publish.rejected')"></p>
+            <p class="hint is-warn" x-show="note.status === 'unavailable'" x-text="t('publish.unavailable')"></p>
+          </div>
+        </template>
+        <template x-if="accountType === 'anon'">
+          <div>
+            <div class="preset-chips">
+              <template x-for="k in presetKeys" :key="k">
+                <button :class="{ on: note.preset === k }" @click="note.preset = note.preset === k ? null : k" x-text="t('presets.' + k)"></button>
+              </template>
+            </div>
+            <p class="hint" x-show="platform.env !== 'standalone'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#info"></use></svg> <span x-text="t('publish.loginForText')"></span></p>
+          </div>
+        </template>
+        <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: timeLeft(resetAt) })"></p>
+        <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft || note.status === 'checking'" @click="doPublish()"
+                x-text="note.status === 'checking' ? t('publish.checking') : t('publish.go')"></button>
+        <button class="btn btn-ghost btn-block" x-show="note.status === 'unavailable'" @click="doPublish(true)" x-text="t('publish.publishWithout')"></button>
+      </div>
+    </template>
+
+    <!-- 发布成功后直接进入交换页，不插入额外确认步骤。 -->
+
+    <!-- 关注 UP主（5.5） -->
+    <template x-if="sheet === 'follow'">
+      <div class="follow-sheet">
+        <div class="author">
+          <div class="avatar lg"><span class="avatar-letter" x-text="(authorInfo?.nickname || 'UP').slice(0, 1)"></span></div>
+          <b x-text="authorInfo?.nickname || 'UP主'"></b>
+          <small x-show="authorInfo" x-text="t('follow.fans', { n: (authorInfo?.follower || 0).toLocaleString() })"></small>
+        </div>
+        <h3 class="sheet-title center" x-text="t('follow.title')"></h3>
+        <p class="hint center" x-text="t('follow.desc')"></p>
+        <button class="btn btn-primary btn-block btn-shine" @click="goFollow()"><span x-text="t('follow.go')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg></button>
+        <button class="btn btn-ghost btn-block" @click="recheckFollow()" x-text="t('follow.already')"></button>
+      </div>
+    </template>
+
+    <!-- 完成了哪几对 -->
+    <template x-if="sheet === 'done'">
+      <div x-data="{ get m() { return this.matches.find(x => x.id === this.sheetData.matchId) } }">
+        <h3 class="sheet-title" x-text="t('match.whichPairs')"></h3>
+        <template x-for="(p, i) in m.pairs" :key="i">
+          <label class="check-row">
+            <input type="checkbox" :checked="sheetData.sel.includes(i)" @change="toggleSel(i)">
+            <span class="pair-label"><span x-text="cardName(p.give)"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><span x-text="cardName(p.get)"></span></span>
+          </label>
+        </template>
+        <button class="btn btn-primary btn-block" :disabled="!sheetData.sel.length" @click="confirmDone(sheetData.matchId, sheetData.sel)" x-text="t('match.confirmDone')"></button>
+      </div>
+    </template>
+
+    <!-- 遇到问题 -->
+    <template x-if="sheet === 'problem'">
+      <div>
+        <h3 class="sheet-title" x-text="t('match.problemTitle')"></h3>
+        <template x-for="r in reasons" :key="r">
+          <label class="check-row radio">
+            <input type="radio" name="reason" :value="r" :checked="sheetData.reason === r" @change="sheetData.reason = r">
+            <span x-text="t('match.reasons.' + r)"></span>
+          </label>
+        </template>
+        <textarea x-show="sheetData.reason === 'other'" rows="2" maxlength="200" :placeholder="t('match.otherPlaceholder')" x-model="sheetData.note"></textarea>
+        <button class="btn btn-primary btn-block" :disabled="!sheetData.reason" @click="submitProblem()" x-text="t('match.submit')"></button>
+      </div>
+    </template>
+
+    <!-- 修改 UID -->
+    <template x-if="sheet === 'uid'">
+      <div class="uid-form">
+        <h3 id="edit-uid-title" class="sheet-title" x-text="t('onboard.uidTitle')"></h3>
+        <p class="hint is-warn" x-show="listing" x-text="t('me.uidLocked')"></p>
+        <div class="uid-field" :class="{ 'is-bad': uidState.state === 'invalid' }">
+          <input class="uid-input" inputmode="numeric" autocomplete="off" maxlength="13" aria-labelledby="edit-uid-title"
+                 :placeholder="t('onboard.uidPlaceholder')" :value="group(uidInput)" @input="onUidInput($event)">
+        </div>
+        <!-- 服务器由 UID 自动识别，不再提供手动选择抽屉。 -->
+        <div class="server-slot" role="status" aria-live="polite" aria-atomic="true">
+          <template x-if="uidState.state === 'ok'">
+            <div class="server-badge flip-in" :data-tone="servers[serverKeyOf(uidInput)]?.tone">
+              <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.5)" class="moon-lit"/></svg>
+              <span x-text="serverName(serverKeyOf(uidInput)) + ' · ' + servers[serverKeyOf(uidInput)].name.en"></span>
+            </div>
+          </template>
+          <p class="hint" x-show="uidState.state === 'typing'" x-text="t('onboard.uidTyping')"></p>
+          <p class="hint is-bad" x-show="uidState.state === 'invalid'" x-text="t('onboard.uidInvalid')"></p>
+          <p class="hint is-warn" x-show="uidState.state === 'unknown'" x-text="t('onboard.uidUnknown')"></p>
+        </div>
+        <p class="privacy"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('onboard.privacy')"></span></p>
+        <button class="btn btn-primary btn-block" :disabled="!uidReady" @click="listing && withdraw(); confirmUid(); refresh()" x-text="t('common.confirm')"></button>
+      </div>
+    </template>
+
+    <!-- 扫码到手机 -->
+    <template x-if="sheet === 'qr'">
+      <div class="center-col">
+        <h3 class="sheet-title" x-text="t('me.qr')"></h3>
+        <img class="qr" :src="qrSrc" alt="QR">
+        <p class="hint center" x-text="t('me.qrDesc')"></p>
+      </div>
+    </template>
+
+    <!-- Box 导出 / 导入：粘贴字母码自动识别，校验通过后一次应用全部选牌设置。 -->
+    <template x-if="sheet === 'exportBox'">
+      <div class="box-code-sheet">
+        <h3 class="sheet-title" x-text="t('me.exportBox')"></h3>
+        <p class="hint" x-text="t('me.boxExportHint')"></p>
+        <label class="field-label" for="box-export-code" x-text="t('me.boxCode')"></label>
+        <textarea id="box-export-code" class="box-code-input mono" rows="4" readonly spellcheck="false" :value="boxCode" @focus="$el.select()" @click="$el.select()"></textarea>
+        <button class="btn btn-primary btn-block" @click="copy(boxCode)" x-text="t('me.boxCopy')"></button>
+      </div>
+    </template>
+    <template x-if="sheet === 'importBox'">
+      <div class="box-code-sheet" x-init="$nextTick(() => $el.querySelector('textarea').focus())">
+        <h3 class="sheet-title" x-text="t('me.importBox')"></h3>
+        <p class="hint" x-text="t('me.boxImportHint')"></p>
+        <label class="field-label" for="box-import-code" x-text="t('me.boxCode')"></label>
+        <textarea id="box-import-code" class="box-code-input mono" rows="4" maxlength="512" placeholder="LASB1-…" spellcheck="false" autocapitalize="characters" autocomplete="off" x-model="boxImportInput" @input="boxImportInput = $event.target.value; previewBoxImport()" :aria-invalid="!!boxImportError" aria-describedby="box-import-status"></textarea>
+        <div id="box-import-status" aria-live="polite">
+          <p class="hint is-bad" x-show="boxImportError" x-text="boxImportError"></p>
+          <template x-if="boxImportPreview">
+            <p class="hint" x-text="t('me.boxRecognized', { mode: t(boxImportPreview.mode === 'full' ? 'box.full' : 'box.quick'), n: boxImportPreview.counts.filter(n => n > 0).length, total: boxImportPreview.counts.reduce((a, b) => a + b, 0) })"></p>
+          </template>
+        </div>
+        <p class="hint is-warn" x-show="activeMatches.length" x-text="t('me.boxImportLocked')"></p>
+        <p class="hint is-warn" x-show="listing && !activeMatches.length" x-text="t('me.boxImportListing')"></p>
+        <button class="btn btn-primary btn-block" :disabled="!boxImportPreview || busy || activeMatches.length" @click="importBox()" x-text="t('me.boxImportApply')"></button>
+      </div>
+    </template>
+
+    <!-- 原型调试面板 -->
+    <template x-if="sheet === 'debug'">
+      <div class="debug">
+        <h3 class="sheet-title">原型调试 <small>M0 · 仅原型</small></h3>
+        <div class="debug-row"><span>运行环境</span>
+          <div class="seg sm">
+            <template x-for="e in ['toy-app', 'toy-web', 'standalone']" :key="e">
+              <button :class="{ on: dev.env === e }" @click="devSet({ env: e }, true)" x-text="e"></button>
+            </template>
+          </div>
+        </div>
+        <div class="debug-row" x-show="dev.env !== 'standalone'"><span>B站 已登录</span>
+          <button class="switch" :class="{ on: dev.loggedIn }" @click="devSet({ loggedIn: !dev.loggedIn }, true)"><i></i></button>
+        </div>
+        <div class="debug-row"><span>当前用户</span><b x-text="accountType === 'bili' ? 'B站用户' : '匿名用户'"></b></div>
+        <div class="debug-row" x-show="accountType === 'bili'"><span>已关注 UP主</span>
+          <button class="switch" :class="{ on: dev.following }" @click="devSet({ following: !dev.following }); followCache = null"><i></i></button>
+        </div>
+        <div class="debug-row"><span>发布时立即匹配</span>
+          <div class="seg sm">
+            <template x-for="v in ['random', 'always', 'never']" :key="v">
+              <button :class="{ on: dev.instantMatch === v }" @click="devSet({ instantMatch: v })" x-text="{ random: '随机', always: '总是', never: '从不' }[v]"></button>
+            </template>
+          </div>
+        </div>
+        <div class="debug-row"><span>特效档位</span><b x-text="fx + (fxPref === 'auto' ? '（自动）' : '')"></b></div>
+        <div class="debug-btns">
+          <button class="btn btn-ghost sm" @click="devIncoming()">模拟：有人匹配到我</button>
+          <button class="btn btn-ghost sm" @click="devPartner('reveal')">模拟：对方开始交换</button>
+          <button class="btn btn-ghost sm" @click="devPartner('confirm')">模拟：对方确认完成</button>
+          <button class="btn btn-ghost sm" @click="devResetQuota()">重置今日次数</button>
+          <button class="btn btn-ghost sm danger" @click="clearAll()">清空全部数据</button>
+        </div>
+      </div>
+    </template>
+  </div>
+</div>

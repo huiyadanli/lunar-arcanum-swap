@@ -1,0 +1,479 @@
+{
+  "scope": "two real exports and synthetic variants; offline Pillow validation, not browser validation",
+  "normalization": {
+    "width": 540,
+    "height": 3808,
+    "mode": "independent axes, aspect checked before resizing"
+  },
+  "frameStripsInWorkingSlot": [
+    [
+      8,
+      130,
+      4,
+      160
+    ],
+    [
+      144,
+      130,
+      4,
+      160
+    ]
+  ],
+  "variants": {
+    "mine-original": {
+      "sourceSize": [
+        1080,
+        7616
+      ],
+      "layoutValid": true,
+      "templateAfterXYNormalizationCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "colorCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "ownedTypes": 12,
+      "totalCards": 13,
+      "colorSeparation": {
+        "missingBlueFractionMinPerStrip": 0.771875,
+        "missingSilverFractionMaxPerStrip": 0.0,
+        "ownedBlueFractionMaxPerStrip": 0.0,
+        "ownedSilverFractionMinPerStrip": 1.0
+      },
+      "anchorsAfterXYNormalization": {
+        "layout-header": {
+          "ncc": 0.9999989427174066,
+          "mae": 3.69109994778444e-05,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9999999445604941,
+          "mae": 2.7233115468409584e-06,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "second-original": {
+      "sourceSize": [
+        1216,
+        8561
+      ],
+      "layoutValid": true,
+      "templateAfterXYNormalizationCounts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "colorCounts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "matchesExpected": true,
+      "ownedTypes": 14,
+      "totalCards": 14,
+      "colorSeparation": {
+        "missingBlueFractionMinPerStrip": 0.7765625,
+        "missingSilverFractionMaxPerStrip": 0.0,
+        "ownedBlueFractionMaxPerStrip": 0.0,
+        "ownedSilverFractionMinPerStrip": 1.0
+      },
+      "anchorsAfterXYNormalization": {
+        "layout-header": {
+          "ncc": 0.9743572553155548,
+          "mae": 0.033997731323934535,
+          "offset": [
+            0,
+            -1
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9973897732422644,
+          "mae": 0.014712962962962964,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "mine-original-540-jpeg60": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "layoutValid": true,
+      "templateAfterXYNormalizationCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "colorCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "ownedTypes": 12,
+      "totalCards": 13,
+      "colorSeparation": {
+        "missingBlueFractionMinPerStrip": 0.834375,
+        "missingSilverFractionMaxPerStrip": 0.0,
+        "ownedBlueFractionMaxPerStrip": 0.0,
+        "ownedSilverFractionMinPerStrip": 1.0
+      },
+      "anchorsAfterXYNormalization": {
+        "layout-header": {
+          "ncc": 0.990141241052514,
+          "mae": 0.02559282666234538,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9976824461050235,
+          "mae": 0.018435003631082063,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "second-original-540-jpeg60": {
+      "sourceSize": [
+        540,
+        3802
+      ],
+      "layoutValid": true,
+      "templateAfterXYNormalizationCounts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "colorCounts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "matchesExpected": true,
+      "ownedTypes": 14,
+      "totalCards": 14,
+      "colorSeparation": {
+        "missingBlueFractionMinPerStrip": 0.8015625,
+        "missingSilverFractionMaxPerStrip": 0.0,
+        "ownedBlueFractionMaxPerStrip": 0.0,
+        "ownedSilverFractionMinPerStrip": 1.0
+      },
+      "anchorsAfterXYNormalization": {
+        "layout-header": {
+          "ncc": 0.965899396360415,
+          "mae": 0.04547705216154415,
+          "offset": [
+            0,
+            -1
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9956965066712861,
+          "mae": 0.023074074074074073,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      }
+    },
+    "mine-resize-to-second-size-synthetic": {
+      "sourceSize": [
+        1216,
+        8561
+      ],
+      "layoutValid": true,
+      "templateAfterXYNormalizationCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "colorCounts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "ownedTypes": 12,
+      "totalCards": 13,
+      "colorSeparation": {
+        "missingBlueFractionMinPerStrip": 0.7734375,
+        "missingSilverFractionMaxPerStrip": 0.0,
+        "ownedBlueFractionMaxPerStrip": 0.0,
+        "ownedSilverFractionMinPerStrip": 1.0
+      },
+      "anchorsAfterXYNormalization": {
+        "layout-header": {
+          "ncc": 0.9996414037054083,
+          "mae": 0.004272673256630476,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9999204632306633,
+          "mae": 0.0019215686274509807,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      }
+    }
+  },
+  "legacySecondImage": {
+    "layoutValid": false,
+    "anchors": {
+      "layout-header": {
+        "ncc": 0.9758143520506954,
+        "mae": 0.03310736599506653,
+        "offset": [
+          0,
+          -1
+        ]
+      },
+      "layout-footer": {
+        "ncc": 0.7986370444131773,
+        "mae": 0.08811801016702978,
+        "offset": [
+          0,
+          -4
+        ]
+      }
+    },
+    "counts": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ]
+  }
+}

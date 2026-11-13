@@ -1,0 +1,45 @@
+{
+  "source": "docs/assets/mine.jpeg",
+  "profile": "miyoushe-box-v1",
+  "counts": [
+    0,
+    0,
+    0,
+    1,
+    1,
+    2,
+    0,
+    0,
+    1,
+    1,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    1,
+    0,
+    0,
+    1,
+    1,
+    1
+  ],
+  "ownedTypes": 12,
+  "totalCards": 13,
+  "missingIds": [
+    1,
+    2,
+    3,
+    7,
+    8,
+    12,
+    14,
+    16,
+    18,
+    19
+  ],
+  "twoIds": [
+    6
+  ]
+}

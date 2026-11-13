@@ -1,0 +1,219 @@
+{
+  "scope": "offline Pillow design validation; not a browser implementation or multi-user accuracy estimate",
+  "variants": {
+    "original": {
+      "layoutValid": true,
+      "anchors": {
+        "layout-header": {
+          "ncc": 0.9999989427174066,
+          "mae": 3.69109994778444e-05,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9999999445604941,
+          "mae": 2.7233115468409584e-06,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "scoreRanges": {
+        "missingNccMin": 0.9825358648839765,
+        "missingMaeMax": 0.010980524196210472,
+        "ownedNccMax": 0.5286310717843085,
+        "ownedMaeMin": 0.1432527893312207,
+        "card6TwoNcc": 0.9999252943602579,
+        "card6TwoMae": 0.0009871225378023064,
+        "card6RingMae": 0.05191935929301298,
+        "noBadgeRingMaeMin": 0.1648347601951579
+      }
+    },
+    "resize-720-jpeg-70": {
+      "layoutValid": true,
+      "anchors": {
+        "layout-header": {
+          "ncc": 0.9963249096829989,
+          "mae": 0.017681269018167415,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9991842628899095,
+          "mae": 0.013547385620915032,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "scoreRanges": {
+        "missingNccMin": 0.9822447870442275,
+        "missingMaeMax": 0.012081072159503532,
+        "ownedNccMax": 0.5328574877657544,
+        "ownedMaeMin": 0.1424369182016241,
+        "card6TwoNcc": 0.9984184119786751,
+        "card6TwoMae": 0.018904892239122957,
+        "card6RingMae": 0.054225352112676053,
+        "noBadgeRingMaeMin": 0.1631869649268158
+      }
+    },
+    "unreadable-badge-synthetic": {
+      "layoutValid": true,
+      "anchors": {
+        "layout-header": {
+          "ncc": 0.9999989427174066,
+          "mae": 3.69109994778444e-05,
+          "offset": [
+            0,
+            0
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0.9999999445604941,
+          "mae": 2.7233115468409584e-06,
+          "offset": [
+            0,
+            0
+          ]
+        }
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true,
+      "scoreRanges": {
+        "missingNccMin": 0.9825358648839765,
+        "missingMaeMax": 0.010980524196210472,
+        "ownedNccMax": 0.5286310717843085,
+        "ownedMaeMin": 0.1432527893312207,
+        "card6TwoNcc": 0.3242759582795228,
+        "card6TwoMae": 0.17994645608052526,
+        "card6RingMae": 0.05191935929301298,
+        "noBadgeRingMaeMin": 0.1648347601951579
+      }
+    },
+    "blank-invalid-layout": {
+      "layoutValid": false,
+      "anchors": {
+        "layout-header": {
+          "ncc": 0,
+          "mae": 0.18162282360143325,
+          "offset": [
+            -4,
+            -4
+          ]
+        },
+        "layout-footer": {
+          "ncc": 0,
+          "mae": 0.2299257443718228,
+          "offset": [
+            -4,
+            -4
+          ]
+        }
+      },
+      "counts": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "matchesExpected": true
+    }
+  }
+}

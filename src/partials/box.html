@@ -1,0 +1,172 @@
+<!-- 我的 Box（设计文档 6.3） -->
+<section class="page page-box" x-show="route === 'box'" x-cloak>
+  <header class="page-head">
+    <h1 x-text="t('box.title')"></h1>
+    <div class="seg" role="tablist">
+      <button :class="{ on: mode === 'quick' }" @click="mode = 'quick'; batch = false" x-text="t('box.quick')"></button>
+      <button :class="{ on: mode === 'full' }" @click="mode = 'full'" x-text="t('box.full')"></button>
+    </div>
+  </header>
+
+  <button class="namecard-entry" @click="openNamecard()" :disabled="!giveTotal || !wantList.length">
+    <span class="namecard-entry-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg></span>
+    <span><b x-text="t('namecard.entry')"></b><small x-text="t('namecard.entryHint')"></small></span>
+    <svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
+  </button>
+
+  <!-- 首次使用第 3 步提示 -->
+  <div class="banner banner-step" x-show="onboardHint" x-transition>
+    <div class="moon-steps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <span x-text="t(mode === 'quick' ? 'onboard.step3Quick' : 'onboard.step3Full')"></span>
+    <button class="icon-btn sm" @click="onboardHint = null" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#close"></use></svg></button>
+  </div>
+
+  <div class="banner" x-show="loginHint && !loginHintClosed" x-transition>
+    <span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cloud"></use></svg></span><span x-text="t('me.loginHint')"></span>
+    <button class="icon-btn sm" @click="loginHintClosed = true" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#close"></use></svg></button>
+  </div>
+
+  <!-- 完整 Box：统计 + 筛选 -->
+  <template x-if="mode === 'full'">
+    <div>
+      <div class="stats arch">
+        <div class="moon-progress" :class="{ full: ownedCount === 22 }">
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="40" class="moon-dark"/>
+            <path :d="moonPath(ownedCount / 22)" class="moon-lit"/>
+          </svg>
+        </div>
+        <div class="stats-main">
+          <div class="stats-big"><b x-text="ownedCount"></b><span>/22</span></div>
+          <div class="stats-label" x-text="t('box.collected')"></div>
+        </div>
+        <div class="stats-chips">
+          <button :class="{ on: filter === 'missing' }" @click="filter = filter === 'missing' ? 'all' : 'missing'">
+            <b x-text="missingCount"></b><span x-text="t('box.missing')"></span>
+          </button>
+          <button :class="{ on: filter === 'spare' }" @click="filter = filter === 'spare' ? 'all' : 'spare'">
+            <b x-text="spareTotal"></b><span x-text="t('box.spare')"></span>
+          </button>
+          <button @click="filter = 'all'"><b x-text="totalCount"></b><span x-text="t('box.total')"></span></button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="chips">
+          <button :class="{ on: filter === 'all' }" @click="filter = 'all'" x-text="t('box.filterAll')"></button>
+          <button :class="{ on: filter === 'missing' }" @click="filter = 'missing'" x-text="t('box.filterMissing')"></button>
+          <button :class="{ on: filter === 'spare' }" @click="filter = 'spare'" x-text="t('box.filterSpare')"></button>
+        </div>
+        <button class="chip-btn" :class="{ on: batch }" @click="batch = !batch">
+          <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="'assets/icons/ui.svg#' + (batch ? 'check' : 'edit')"></use></svg>
+          <span x-text="t(batch ? 'box.batchDone' : 'box.batch')"></span>
+        </button>
+      </div>
+
+      <div class="empty-card" x-show="totalCount === 0 && !batch">
+        <b x-text="t('box.emptyTitle')"></b>
+        <div class="row-btns">
+          <button class="btn btn-primary sm" @click="batch = true" x-text="t('box.emptyStart')"></button>
+          <button class="btn btn-ghost sm" @click="mode = 'quick'" x-text="t('box.emptyQuick')"></button>
+        </div>
+      </div>
+      <div class="empty-card complete" x-show="ownedCount === 22">
+        <b x-text="t('box.completeTitle')"></b><span x-text="t('box.completeDesc')"></span>
+      </div>
+    </div>
+  </template>
+
+  <!-- 快速交换：给出 / 想要 -->
+  <template x-if="mode === 'quick'">
+    <div>
+      <div class="seg seg-wide seg-quick">
+        <button :class="{ on: quickTab === 'give' }" @click="quickTab = 'give'">
+          <span x-text="t('box.giveTab')"></span><b x-show="giveTotal" x-text="giveTotal"></b>
+        </button>
+        <button :class="{ on: quickTab === 'want' }" @click="quickTab = 'want'" class="want">
+          <span x-text="t('box.wantTab')"></span><b x-show="quick.want.length" x-text="quick.want.length"></b>
+        </button>
+      </div>
+      <p class="hint center" x-text="t(quickTab === 'give' ? 'box.quickGiveHint' : 'box.quickWantHint')"></p>
+    </div>
+  </template>
+
+  <!-- 卡牌网格 -->
+  <div class="grid" :class="{ 'is-batch': batch && mode === 'full' }">
+    <template x-for="c in visibleCards" :key="c.id">
+      <div class="tile-wrap">
+        <button class="tile" data-burst
+                :class="mode === 'full'
+                  ? 'is-' + tileState(c.id)
+                  : (lockedGive(c.id) || lockedGet(c.id) ? 'is-locked' : quick.give[c.id] ? 'is-give' : quick.want.includes(c.id) ? 'is-want' : '') +
+                    ((quickTab === 'give' && quick.want.includes(c.id)) || (quickTab === 'want' && quick.give[c.id]) ? ' is-blocked' : '')"
+                :style="`--card-color:${c.color}`"
+                @click="tileClick(c.id, $event)" @pointerdown="tileDown(c.id)" @pointerup="tileUp()" @pointerleave="tileUp()"
+                @contextmenu.prevent :aria-label="cardName(c.id)">
+          <img :src="c.img.s" :srcset="`${c.img.s} 160w, ${c.img.m} 360w`" sizes="(min-width: 1024px) 130px, 24vw"
+               loading="lazy" decoding="async" alt="" draggable="false">
+          <!-- 完整模式角标 -->
+          <template x-if="mode === 'full'">
+            <span>
+              <span class="tile-spare" x-show="spare(c.id) > 0" x-text="'+' + spare(c.id)"></span>
+              <span class="tile-want" x-show="count(c.id) === 0 && wanted(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg></span>
+              <span class="tile-count" x-show="count(c.id) > 0" x-text="'×' + count(c.id)"></span>
+              <span class="tile-tag" x-show="tileState(c.id) === 'missing'" x-text="t('box.tagMissing')"></span>
+            </span>
+          </template>
+          <!-- 快速模式角标 -->
+          <template x-if="mode === 'quick'">
+            <span>
+              <span class="tile-count give" x-show="quick.give[c.id]" x-text="'×' + quick.give[c.id]"></span>
+              <span class="tile-want" x-show="quick.want.includes(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg></span>
+            </span>
+          </template>
+          <span class="tile-lock" x-show="lockedGive(c.id) || lockedGet(c.id)"><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
+        </button>
+        <span class="tile-name" x-text="cardName(c.id)"></span>
+        <div class="mini-stepper" x-show="batch && mode === 'full'">
+          <button @click="setCount(c.id, count(c.id) - 1)" aria-label="-1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#minus"></use></svg></button>
+          <b x-text="count(c.id)"></b>
+          <button @click="setCount(c.id, count(c.id) + 1, $event)" aria-label="+1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#plus"></use></svg></button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- 吸底发布条 -->
+  <div class="sticky-bar">
+    <template x-if="!listing">
+      <div class="bar-inner">
+        <div class="bar-summary">
+          <div class="bar-row">
+            <small x-text="t('box.barGive')"></small>
+            <template x-for="id in giveIds.slice(0, 5)" :key="'g' + id">
+              <img class="chip-card" :src="card(id).img.s" alt="" :title="cardName(id)">
+            </template>
+            <em x-show="giveIds.length > 5" x-text="'+' + (giveIds.length - 5)"></em>
+            <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+            <small x-text="t('box.barWant')"></small>
+            <template x-for="id in wantList.slice(0, 5)" :key="'w' + id">
+              <img class="chip-card want" :src="card(id).img.s" alt="" :title="cardName(id)">
+            </template>
+            <em x-show="wantList.length > 5" x-text="'+' + (wantList.length - 5)"></em>
+          </div>
+          <div class="bar-sub" x-text="publishBlocker || t('box.barSummary', { give: giveTotal, want: wantList.length })"></div>
+        </div>
+        <button class="btn btn-primary btn-shine" :disabled="!!publishBlocker" @click="openPublish()" x-text="t('box.publish')"></button>
+      </div>
+    </template>
+    <template x-if="listing">
+      <div class="bar-inner">
+        <div class="bar-summary">
+          <div class="bar-live"><i class="pulse"></i><span x-text="t('box.listingActive')"></span></div>
+          <div class="bar-sub" x-show="listingDirty">
+            <span x-text="t('box.boxChanged')"></span> ·
+            <button class="link-btn inline" @click="syncListing()" x-text="t('box.syncListing')"></button>
+          </div>
+        </div>
+        <button class="btn btn-ghost" @click="go('trade')"><span x-text="t('nav.trade')"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg></button>
+      </div>
+    </template>
+  </div>
+</section>

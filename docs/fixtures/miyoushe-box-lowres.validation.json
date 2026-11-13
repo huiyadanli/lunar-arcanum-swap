@@ -1,0 +1,840 @@
+{
+  "scope": "three real files; offline Pillow validation only; third file shares first file's card quantities",
+  "previousThirdImageResult": {
+    "sourceSize": [
+      476,
+      3349
+    ],
+    "layoutValid": false,
+    "templateAfterXYNormalizationCounts": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "colorCounts": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "matchesExpected": false,
+    "ownedTypes": 0,
+    "totalCards": 0,
+    "colorSeparation": {
+      "missingBlueFractionMinPerStrip": 0.665625,
+      "missingSilverFractionMaxPerStrip": 0.0,
+      "ownedBlueFractionMaxPerStrip": 0.0,
+      "ownedSilverFractionMinPerStrip": 1.0
+    },
+    "anchorsAfterXYNormalization": {
+      "layout-header": {
+        "ncc": 0.8484584341130065,
+        "mae": 0.08039125659446515,
+        "offset": [
+          0,
+          -1
+        ]
+      },
+      "layout-footer": {
+        "ncc": 0.9923124633107938,
+        "mae": 0.02239143064633261,
+        "offset": [
+          0,
+          1
+        ]
+      }
+    }
+  },
+  "layoutRule": "original aspect within 1%; footer NCC>=0.90 and MAE<=0.08; all 22 frames have matching left/right color classes",
+  "variants": {
+    "mine-original": {
+      "sourceSize": [
+        1080,
+        7616
+      ],
+      "layoutValid": true,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9999999445604941,
+        "mae": 2.7233115468409584e-06,
+        "offset": [
+          0,
+          0
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": true,
+      "recognizedFrameCount": 22,
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true
+    },
+    "second-original": {
+      "sourceSize": [
+        1216,
+        8561
+      ],
+      "layoutValid": true,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9973897732422644,
+        "mae": 0.014712962962962964,
+        "offset": [
+          0,
+          0
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": true,
+      "recognizedFrameCount": 22,
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "matchesExpected": true
+    },
+    "third-original": {
+      "sourceSize": [
+        476,
+        3349
+      ],
+      "layoutValid": true,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9923124633107938,
+        "mae": 0.02239143064633261,
+        "offset": [
+          0,
+          1
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": true,
+      "recognizedFrameCount": 22,
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "frames": [
+        {
+          "id": 1,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.925,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.775,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.9296875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.6734375,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.925,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.753125,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.9234375,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.771875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.925,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.665625,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.921875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.7546875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.9265625,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.66875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.9234375,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.778125,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.925,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.75625,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "state": "missing",
+          "strips": [
+            {
+              "blueFraction": 0.91875,
+              "silverFraction": 0.0,
+              "state": "missing"
+            },
+            {
+              "blueFraction": 0.778125,
+              "silverFraction": 0.0,
+              "state": "missing"
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "state": "owned",
+          "strips": [
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            },
+            {
+              "blueFraction": 0.0,
+              "silverFraction": 1.0,
+              "state": "owned"
+            }
+          ]
+        }
+      ],
+      "quantities": [
+        {
+          "id": 1,
+          "twoNcc": 0.04717069787498162,
+          "twoMae": 0.21019129238270443,
+          "ringMae": 0.22392985363159348
+        },
+        {
+          "id": 2,
+          "twoNcc": 0.07164423060724423,
+          "twoMae": 0.21064297572575943,
+          "ringMae": 0.21139188069594034
+        },
+        {
+          "id": 3,
+          "twoNcc": 0.1072308528399825,
+          "twoMae": 0.21105876370380341,
+          "ringMae": 0.22154561355058455
+        },
+        {
+          "id": 4,
+          "twoNcc": 0.044645853929616404,
+          "twoMae": 0.2035117632102421,
+          "ringMae": 0.1691061401086256
+        },
+        {
+          "id": 5,
+          "twoNcc": 0.2842156541111531,
+          "twoMae": 0.20283573383586845,
+          "ringMae": 0.16957562367670073
+        },
+        {
+          "id": 6,
+          "twoNcc": 0.9419915962199186,
+          "twoMae": 0.06704655927969969,
+          "ringMae": 0.040412409095093436
+        },
+        {
+          "id": 7,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20129798398232532
+        },
+        {
+          "id": 8,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20150510908588787
+        },
+        {
+          "id": 9,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.19853631593482463
+        },
+        {
+          "id": 10,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.19795176286477031
+        },
+        {
+          "id": 11,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.1976801988400994
+        },
+        {
+          "id": 12,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20157875356715457
+        },
+        {
+          "id": 13,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.1984994936941913
+        },
+        {
+          "id": 14,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20139464236398785
+        },
+        {
+          "id": 15,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.19844886311332044
+        },
+        {
+          "id": 16,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.2016155758077879
+        },
+        {
+          "id": 17,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.1989137439013164
+        },
+        {
+          "id": 18,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20153732854644205
+        },
+        {
+          "id": 19,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.20109085887876277
+        },
+        {
+          "id": 20,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.19822792966952038
+        },
+        {
+          "id": 21,
+          "twoNcc": 0,
+          "twoMae": 0.21115448467716605,
+          "ringMae": 0.19843505477308293
+        },
+        {
+          "id": 22,
+          "twoNcc": 0.08475071566122212,
+          "twoMae": 0.21073570541870448,
+          "ringMae": 0.2076958482923686
+        }
+      ],
+      "matchesExpected": true
+    },
+    "third-native-size-jpeg60": {
+      "sourceSize": [
+        476,
+        3349
+      ],
+      "layoutValid": true,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9907886829230174,
+        "mae": 0.02795733478576616,
+        "offset": [
+          0,
+          1
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": true,
+      "recognizedFrameCount": 22,
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true
+    },
+    "footer-only-invalid-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "layoutValid": false,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9999999445604941,
+        "mae": 2.7233115468409584e-06,
+        "offset": [
+          0,
+          0
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": false,
+      "recognizedFrameCount": 0,
+      "counts": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "matchesExpected": true
+    },
+    "unreadable-badge-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "layoutValid": true,
+      "aspectValid": true,
+      "footer": {
+        "ncc": 0.9999999445604941,
+        "mae": 2.7233115468409584e-06,
+        "offset": [
+          0,
+          0
+        ]
+      },
+      "footerValid": true,
+      "all22FramesValid": true,
+      "recognizedFrameCount": 22,
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "matchesExpected": true
+    }
+  }
+}

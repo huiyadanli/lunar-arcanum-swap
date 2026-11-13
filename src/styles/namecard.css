@@ -1,0 +1,42 @@
+/* 交换名片：入口延续月夜与鎏金色，抽屉突出最终图片本身。 */
+.namecard-entry {
+  display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 16px; margin: 0 0 20px;
+  text-align: left; border: 1px solid #d9bd8040; border-radius: 14px;
+  background: radial-gradient(ellipse at 100% 0, #c9a15c16, transparent 65%), linear-gradient(110deg, #d9bd800c, #16213a44);
+  transition: border-color .2s, background-color .2s;
+}
+.namecard-entry:hover:not(:disabled) { border-color: #d9bd8088; background-color: #d9bd8008; }
+.namecard-entry:disabled { opacity: .5; cursor: default; }
+.namecard-entry-icon { display: grid; place-items: center; flex: none; width: 42px; height: 46px; border-radius: 22px 22px 8px 8px; color: var(--moon-gold); background: #d9bd8010; border: 1px solid #d9bd8030; }
+.namecard-entry > span:nth-child(2) { flex: 1; }
+.namecard-entry b { display: block; font-size: 14px; font-weight: 600; color: var(--moon-gold); }
+.namecard-entry small { display: block; font-size: 12px; color: var(--text-2); margin-top: 3px; }
+.namecard-entry > .icon, .namecard-action { color: var(--moon-gold); }
+.sheet.sheet-namecard { max-width: 940px; background: #111b30; }
+.namecard-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.namecard-heading small { color: var(--moon-gold); font: 600 10px var(--font-display); letter-spacing: .16em; }
+.namecard-heading .sheet-title { margin: 4px 0 0; font-size: 21px; }
+.namecard-layout { display: grid; gap: 20px; }
+.namecard-preview { max-height: 48dvh; overflow: auto; overscroll-behavior: contain; border: 1px solid #d9bd8030; border-radius: 10px; background: #0b1323; scrollbar-width: thin; scrollbar-color: #bfa77455 transparent; }
+.namecard-preview img { display: block; width: 100%; height: auto; }
+.namecard-placeholder { display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 16px; min-height: 320px; padding: 32px; text-align: center; color: var(--moon-gold); }
+.namecard-placeholder p { font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.namecard-intro { font-size: 14px; line-height: 1.8; color: var(--text-2); }
+.namecard-source { display: flex; gap: 6px; align-items: center; margin: 12px 0; color: var(--moon-gold); font-size: 12px; }
+.namecard-uid { border: 1px solid var(--border); padding: 13px; border-radius: 12px; margin: 14px 0; }
+.namecard-uid input { flex: none; }
+.namecard-uid b { display: block; font-size: 14px; font-weight: 500; }
+.namecard-uid small { display: block; font-size: 12px; line-height: 1.5; color: var(--text-2); margin-top: 4px; }
+.namecard-destination { margin: 18px 0; }
+.namecard-destination.is-bili { border-left: 2px solid var(--bili-pink); padding: 3px 0 3px 12px; }
+.namecard-destination b { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--moon-gold); }
+.namecard-destination.is-bili b { color: var(--bili-pink); }
+.namecard-destination p { font-size: 12px; line-height: 1.7; color: var(--text-2); margin: 6px 0; }
+.namecard-destination a { display: block; color: var(--text-2); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; text-decoration: underline; text-underline-offset: 3px; }
+.namecard-options > .hint { font-size: 11px; margin-top: 10px; line-height: 1.7; }
+@media (min-width: 700px) {
+  .sheet.sheet-namecard { padding: 12px 24px 24px; }
+  .namecard-layout { grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 28px; align-items: start; }
+  .namecard-preview { max-height: 67dvh; }
+  .namecard-options { padding-top: 8px; }
+}

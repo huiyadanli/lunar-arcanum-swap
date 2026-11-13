@@ -1,0 +1,90 @@
+<!-- 匹配详情（设计文档 5.3–5.5、6.5.3） -->
+<section class="page page-match" x-show="route === 'trade' && param" x-cloak>
+  <template x-if="currentMatch">
+    <div x-data="{ get m() { return this.currentMatch } }">
+      <header class="page-head">
+        <button class="icon-btn" @click="go('trade')" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+        <h1 x-text="t('match.title')"></h1>
+        <span class="countdown" x-show="['matched', 'confirming'].includes(m.status)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#timer"></use></svg> <span x-text="t('trade.expiresIn', { time: timeLeft(m.expiresAt) })"></span></span>
+      </header>
+
+      <!-- 交换对象 -->
+      <div class="partner arch" :class="{ revealed: m.partner.uid }">
+        <div class="partner-label" x-text="t('match.partner')"></div>
+        <div class="uid-big">
+          <span class="uid-label">UID</span>
+          <span id="uid-full" class="uid-digits" x-show="m.partner.uid" x-text="group(m.partner.uid || '')"></span>
+          <span class="uid-digits masked" x-show="!m.partner.uid" x-text="group(m.partner.uidMasked).replace(/\*/g, '•')"></span>
+        </div>
+        <div class="partner-meta">
+          <span class="server-badge sm" :data-tone="servers[m.partner.server].tone" x-text="serverName(m.partner.server)"></span>
+          <span class="moons" x-text="moons(m.partner.creditLevel)"></span>
+          <span class="hint" x-text="t(m.partner.creditLevel >= 5 ? 'match.credit' : 'match.creditOk')"></span>
+        </div>
+        <p class="partner-note" x-show="m.partner.note"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
+        <div class="row-btns" x-show="m.partner.uid">
+          <button class="btn btn-ghost sm" @click="copy(m.partner.uid)" x-text="t('match.copyUid')"></button>
+          <button class="btn btn-ghost sm" @click="copy(tradeMsg(m))" x-text="t('match.copyMsg')"></button>
+        </div>
+      </div>
+
+      <!-- 交换内容 -->
+      <div class="panel">
+        <div class="panel-head"><b x-text="t('match.content')"></b><span class="hint" x-text="t('trade.pairs', { n: m.pairs.length })"></span></div>
+        <template x-for="(p, i) in m.pairs" :key="i">
+          <div class="pair-row">
+            <div class="pair-card">
+              <img :src="card(p.give).img.s" alt="" :style="`--card-color:${card(p.give).color}`">
+              <div><small x-text="t('match.youGive')"></small><b x-text="cardName(p.give)"></b></div>
+            </div>
+            <span class="pair-arrow"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+            <div class="pair-card get">
+              <img :src="card(p.get).img.s" alt="" :style="`--card-color:${card(p.get).color}`">
+              <div><small x-text="t('match.youGet')"></small><b x-text="cardName(p.get)"></b></div>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- 开始交换之前 -->
+      <template x-if="m.status === 'matched' && !m.partner.uid">
+        <div class="cta-block">
+          <button class="btn btn-primary btn-block btn-lg btn-shine" :disabled="busy" @click="startTrade(m)">
+            <span x-text="t('match.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
+          </button>
+          <p class="hint center" x-text="t('match.startHint')"></p>
+          <button class="link-btn center muted" @click="openProblem(m, 'self')" x-text="t('match.quit')"></button>
+        </div>
+      </template>
+
+      <!-- 开始交换之后 -->
+      <template x-if="['matched', 'confirming'].includes(m.status) && m.partner.uid">
+        <div class="cta-block">
+          <p class="partner-live" x-show="m.partnerRevealed"><i class="pulse"></i><span x-text="t('match.partnerStarted')"></span></p>
+          <p class="hint" x-text="t('match.addHint', { uid: m.partner.uid })"></p>
+          <ol class="steps">
+            <li x-text="t('match.step1')"></li>
+            <li x-text="t('match.step2')"></li>
+            <li x-text="t('match.step3')"></li>
+          </ol>
+          <div class="msg-preview" @click="copy(tradeMsg(m))">
+            <small x-text="t('match.copyMsg')"></small>
+            <span x-text="tradeMsg(m)"></span>
+          </div>
+          <div class="row-btns stretch" x-show="m.status === 'matched'">
+            <button class="btn btn-primary" @click="openDone(m)"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('match.doneBtn')"></span></button>
+            <button class="btn btn-ghost" @click="openProblem(m)" x-text="t('match.problemBtn')"></button>
+          </div>
+          <p class="pill st-confirming center-pill" x-show="m.status === 'confirming'" x-text="t('status.confirming')"></p>
+        </div>
+      </template>
+
+      <template x-if="!['matched', 'confirming'].includes(m.status)">
+        <div class="cta-block"><p class="pill center-pill" :class="'st-' + m.status" x-text="t('status.' + m.status)"></p></div>
+      </template>
+    </div>
+  </template>
+  <template x-if="!currentMatch">
+    <div class="empty"><p x-text="t('common.loading')"></p></div>
+  </template>
+</section>
