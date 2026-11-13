@@ -10,8 +10,8 @@ export const SERVERS = {
   tw: { region: 'tw', name: { 'zh-CN': '港澳台服', en: 'TW·HK·MO' }, tone: 'rose', tz: 8 },
 };
 
-const NINE_DIGIT = { 1: 'celestia', 2: 'celestia', 3: 'celestia', 5: 'irminsul', 6: 'america', 7: 'europe', 8: 'asia', 9: 'tw' };
-const TEN_DIGIT_PREFIX = { 18: 'asia' };
+export const NINE_DIGIT = { 1: 'celestia', 2: 'celestia', 3: 'celestia', 5: 'irminsul', 6: 'america', 7: 'europe', 8: 'asia', 9: 'tw' };
+export const TEN_DIGIT_PREFIX = { 18: 'asia' };
 
 /** 只做格式判断：纯数字、9/10 位、不是全同数字或顺序串。 */
 export function isPlausibleUid(uid) {
@@ -37,11 +37,6 @@ export function resolveUid(uid) {
 export function maskUid(uid) {
   if (!uid || uid.length < 6) return uid || '';
   return uid.slice(0, 3) + '*'.repeat(uid.length - 5) + uid.slice(-2);
-}
-
-/** 输入框里的视觉分组（每 3 位一个间隔），复制时不带空格。 */
-export function groupUid(uid) {
-  return (uid || '').replace(/(\d{3})(?=\d)/g, '$1 ');
 }
 
 /** 该服务器下一次 04:00 刷新的时间戳（ms）。 */

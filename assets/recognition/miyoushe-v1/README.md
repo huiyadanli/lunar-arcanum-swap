@@ -1,5 +1,7 @@
 # 米游社 Box 导入模板 v1
 
+> 本目录为历史素材，继续保留原始裁片和注释。当前[自适应识别方案](../../../docs/miyoushe-box-import-flexible.md)不加载这些PNG或固定坐标配置，只使用[493字节的数字特征](../miyoushe-flexible/README.md)。以下模板清单和体积说明为旧版记录。
+
 对应 [设计文档](../../../docs/miyoushe-box-import.md)。已裁切素材，尚未被网页代码引用。
 
 跨设备推荐方案见[修订文档](../../../docs/miyoushe-box-import-adaptive.md)：分别归一化宽高，按牌框颜色判断拥有状态。该方案不加载 `missing-back.png`，其余 4 个 PNG 合计 20,460 B；现有牌背素材保留供对照。

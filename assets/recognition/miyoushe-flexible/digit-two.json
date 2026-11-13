@@ -1,0 +1,32 @@
+{
+  "width": 16,
+  "height": 24,
+  "encoding": "16-bit hex rows, left pixel is high bit",
+  "rows": [
+    "0180",
+    "1ff8",
+    "3efc",
+    "7c3e",
+    "783e",
+    "f01e",
+    "f01e",
+    "f01e",
+    "f01e",
+    "001e",
+    "007c",
+    "007c",
+    "00f8",
+    "03e0",
+    "0fc0",
+    "0f80",
+    "1f00",
+    "7e00",
+    "7c00",
+    "7c00",
+    "ffff",
+    "fffe",
+    "fffe",
+    "fffe"
+  ],
+  "source": "user-provided count-two.png; white foreground only"
+}

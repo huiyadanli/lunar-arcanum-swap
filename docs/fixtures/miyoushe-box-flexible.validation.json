@@ -1,0 +1,3048 @@
+{
+  "scope": "offline Pillow proof of concept; no fixed source dimensions, aspect ratio, layout templates or all-22-frame rejection; browser not yet implemented",
+  "variants": {
+    "mine.jpeg:original": {
+      "sourceSize": [
+        1080,
+        7616
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.548,
+      "cards": [
+        {
+          "id": 1,
+          "box": [
+            24,
+            183,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15451388888888887
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "box": [
+            192,
+            182,
+            156,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.16493055555555555
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "box": [
+            360,
+            182,
+            157,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1579861111111111
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "box": [
+            29,
+            636,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7870370370370371,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.5685185185185185,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4583333333333333,
+          "twoDice": 0.33212996389891697
+        },
+        {
+          "id": 5,
+          "box": [
+            197,
+            636,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.8518518518518517,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.8074074074074074,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.18340611353711792
+        },
+        {
+          "id": 6,
+          "box": [
+            365,
+            636,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 2,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.875,
+          "twoDice": 0.8715083798882681
+        },
+        {
+          "id": 7,
+          "box": [
+            23,
+            1061,
+            157,
+            374
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14616755793226383
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "box": [
+            192,
+            1061,
+            156,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.16145833333333334
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "box": [
+            366,
+            1075,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.3987138263665595
+        },
+        {
+          "id": 10,
+          "box": [
+            29,
+            1515,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.3475177304964539
+        },
+        {
+          "id": 11,
+          "box": [
+            197,
+            1514,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.9111111111111111,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.9055555555555556,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.37662337662337664
+        },
+        {
+          "id": 12,
+          "box": [
+            360,
+            1501,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14930555555555555
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "box": [
+            29,
+            1954,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.38311688311688313
+        },
+        {
+          "id": 14,
+          "box": [
+            192,
+            1941,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.18576388888888887
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "box": [
+            365,
+            1954,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.3815789473684211
+        },
+        {
+          "id": 16,
+          "box": [
+            23,
+            2380,
+            156,
+            383
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1579861111111111
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "box": [
+            197,
+            2394,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7814814814814816,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.9833333333333333,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.17316017316017315
+        },
+        {
+          "id": 18,
+          "box": [
+            360,
+            2379,
+            157,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15798611111111113
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "box": [
+            23,
+            2820,
+            156,
+            372
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.16845878136200718
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "box": [
+            197,
+            2833,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.6388888888888888,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.6055555555555555,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.3333333333333333,
+          "twoDice": 0.411214953271028
+        },
+        {
+          "id": 21,
+          "box": [
+            366,
+            2833,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.020370370370370372,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.3818770226537217
+        },
+        {
+          "id": 22,
+          "box": [
+            29,
+            3272,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.8518518518518517,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.8907407407407408,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.2916666666666667,
+          "twoDice": 0.40514469453376206
+        }
+      ],
+      "matchesExpected": true
+    },
+    "mine.jpeg:width-320": {
+      "sourceSize": [
+        320,
+        2257
+      ],
+      "workingSize": [
+        540,
+        3809
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.543,
+      "matchesExpected": true
+    },
+    "mine.jpeg:width-480": {
+      "sourceSize": [
+        480,
+        3385
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.554,
+      "matchesExpected": true
+    },
+    "mine.jpeg:width-720": {
+      "sourceSize": [
+        720,
+        5077
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.528,
+      "matchesExpected": true
+    },
+    "mine.jpeg:width-1280": {
+      "sourceSize": [
+        1280,
+        9026
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.563,
+      "matchesExpected": true
+    },
+    "mine.jpeg:width-1920": {
+      "sourceSize": [
+        1920,
+        13540
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.592,
+      "matchesExpected": true
+    },
+    "mine.jpeg:jpeg-50": {
+      "sourceSize": [
+        1080,
+        7616
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.549,
+      "matchesExpected": true
+    },
+    "mine.jpeg:no-header-footer": {
+      "sourceSize": [
+        1080,
+        7006
+      ],
+      "workingSize": [
+        540,
+        3503
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.456,
+      "matchesExpected": true
+    },
+    "mine.jpeg:padded": {
+      "sourceSize": [
+        1296,
+        7940
+      ],
+      "workingSize": [
+        540,
+        3308
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.209,
+      "matchesExpected": true
+    },
+    "mine.jpeg:row-gap": {
+      "sourceSize": [
+        1080,
+        7692
+      ],
+      "workingSize": [
+        540,
+        3846
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.558,
+      "matchesExpected": true
+    },
+    "2.jpg:original": {
+      "sourceSize": [
+        1216,
+        8561
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.612,
+      "cards": [
+        {
+          "id": 1,
+          "box": [
+            23,
+            183,
+            157,
+            383
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1579861111111111
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "box": [
+            192,
+            182,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15104166666666666
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "box": [
+            366,
+            196,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.3333333333333333,
+          "twoDice": 0.1888412017167382
+        },
+        {
+          "id": 4,
+          "box": [
+            29,
+            635,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7648148148148147,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.5833333333333334,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4583333333333333,
+          "twoDice": 0.16593886462882096
+        },
+        {
+          "id": 5,
+          "box": [
+            197,
+            635,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.8481481481481481,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.8092592592592593,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.38688524590163936
+        },
+        {
+          "id": 6,
+          "box": [
+            366,
+            635,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.3935483870967742
+        },
+        {
+          "id": 7,
+          "box": [
+            29,
+            1073,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.2916666666666667,
+          "twoDice": 0.570694087403599
+        },
+        {
+          "id": 8,
+          "box": [
+            192,
+            1060,
+            156,
+            382
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15532286212914484
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "box": [
+            366,
+            1073,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.4180064308681672
+        },
+        {
+          "id": 10,
+          "box": [
+            29,
+            1512,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.375
+        },
+        {
+          "id": 11,
+          "box": [
+            192,
+            1499,
+            156,
+            382
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1518324607329843
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 12,
+          "box": [
+            366,
+            1512,
+            145,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.32116788321167883
+        },
+        {
+          "id": 13,
+          "box": [
+            23,
+            1937,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15451388888888887
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "box": [
+            192,
+            1937,
+            156,
+            374
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15151515151515152
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "box": [
+            366,
+            1951,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.38688524590163936
+        },
+        {
+          "id": 16,
+          "box": [
+            29,
+            2390,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.08518518518518518,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.08148148148148149,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.38436482084690554
+        },
+        {
+          "id": 17,
+          "box": [
+            197,
+            2390,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7888888888888889,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.9796296296296295,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.38283828382838286
+        },
+        {
+          "id": 18,
+          "box": [
+            366,
+            2390,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.8888888888888888,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.837037037037037,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.1645021645021645
+        },
+        {
+          "id": 19,
+          "box": [
+            29,
+            2829,
+            145,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.014814814814814815,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.2916666666666667,
+          "twoDice": 0.18340611353711792
+        },
+        {
+          "id": 20,
+          "box": [
+            197,
+            2829,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.637037037037037,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.6148148148148148,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.3333333333333333,
+          "twoDice": 0.4166666666666667
+        },
+        {
+          "id": 21,
+          "box": [
+            360,
+            2815,
+            156,
+            383
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.13888888888888887
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "box": [
+            22,
+            3254,
+            158,
+            383
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14583333333333334
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        }
+      ],
+      "matchesExpected": true
+    },
+    "2.jpg:width-320": {
+      "sourceSize": [
+        320,
+        2253
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.603,
+      "matchesExpected": true
+    },
+    "2.jpg:width-480": {
+      "sourceSize": [
+        480,
+        3379
+      ],
+      "workingSize": [
+        540,
+        3801
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.6,
+      "matchesExpected": true
+    },
+    "2.jpg:width-720": {
+      "sourceSize": [
+        720,
+        5069
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.602,
+      "matchesExpected": true
+    },
+    "2.jpg:width-1280": {
+      "sourceSize": [
+        1280,
+        9012
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.803,
+      "matchesExpected": true
+    },
+    "2.jpg:width-1920": {
+      "sourceSize": [
+        1920,
+        13517
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 2.0,
+      "matchesExpected": true
+    },
+    "2.jpg:jpeg-50": {
+      "sourceSize": [
+        1216,
+        8561
+      ],
+      "workingSize": [
+        540,
+        3802
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.944,
+      "matchesExpected": true
+    },
+    "2.jpg:no-header-footer": {
+      "sourceSize": [
+        1216,
+        7877
+      ],
+      "workingSize": [
+        540,
+        3498
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.831,
+      "matchesExpected": true
+    },
+    "2.jpg:padded": {
+      "sourceSize": [
+        1460,
+        8927
+      ],
+      "workingSize": [
+        540,
+        3302
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.367,
+      "matchesExpected": true
+    },
+    "2.jpg:row-gap": {
+      "sourceSize": [
+        1216,
+        8646
+      ],
+      "workingSize": [
+        540,
+        3840
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.626,
+      "matchesExpected": true
+    },
+    "3.png:original": {
+      "sourceSize": [
+        476,
+        3349
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.526,
+      "cards": [
+        {
+          "id": 1,
+          "box": [
+            23,
+            181,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1527777777777778
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "box": [
+            191,
+            181,
+            157,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.17708333333333334
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "box": [
+            360,
+            181,
+            156,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15798611111111113
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "box": [
+            28,
+            634,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7444444444444445,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.5888888888888889,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4583333333333333,
+          "twoDice": 0.32608695652173914
+        },
+        {
+          "id": 5,
+          "box": [
+            196,
+            634,
+            147,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.825925925925926,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.8314814814814815,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.2066115702479339
+        },
+        {
+          "id": 6,
+          "box": [
+            365,
+            634,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 2,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.875,
+          "twoDice": 0.8654353562005277
+        },
+        {
+          "id": 7,
+          "box": [
+            24,
+            1058,
+            155,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14236111111111113
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "box": [
+            192,
+            1058,
+            156,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.17708333333333334
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "box": [
+            365,
+            1072,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.40764331210191085
+        },
+        {
+          "id": 10,
+          "box": [
+            28,
+            1511,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.1826086956521739
+        },
+        {
+          "id": 11,
+          "box": [
+            197,
+            1511,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.9166666666666666,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.912962962962963,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.36363636363636365
+        },
+        {
+          "id": 12,
+          "box": [
+            361,
+            1496,
+            155,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.15625
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 13,
+          "box": [
+            28,
+            1949,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.3274021352313167
+        },
+        {
+          "id": 14,
+          "box": [
+            192,
+            1935,
+            156,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.17881944444444445
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 15,
+          "box": [
+            365,
+            1950,
+            146,
+            360
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.16593886462882096
+        },
+        {
+          "id": 16,
+          "box": [
+            24,
+            2374,
+            155,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14930555555555555
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 17,
+          "box": [
+            197,
+            2388,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.7944444444444444,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.9833333333333333,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.4166666666666667,
+          "twoDice": 0.3274021352313167
+        },
+        {
+          "id": 18,
+          "box": [
+            361,
+            2374,
+            155,
+            384
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.1545138888888889
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 19,
+          "box": [
+            24,
+            2812,
+            155,
+            385
+          ],
+          "state": "missing",
+          "count": 0,
+          "sides": [
+            {
+              "blue": 1.0,
+              "silver": 0.14930555555555555
+            },
+            {
+              "blue": 1.0,
+              "silver": 0.0
+            }
+          ]
+        },
+        {
+          "id": 20,
+          "box": [
+            197,
+            2826,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.6388888888888888,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.575925925925926,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.2916666666666667,
+          "twoDice": 0.4174454828660436
+        },
+        {
+          "id": 21,
+          "box": [
+            365,
+            2826,
+            146,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.0,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.025925925925925925,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.375,
+          "twoDice": 0.3696369636963696
+        },
+        {
+          "id": 22,
+          "box": [
+            28,
+            3265,
+            147,
+            361
+          ],
+          "state": "owned",
+          "count": 1,
+          "sides": [
+            {
+              "blue": 0.8518518518518517,
+              "silver": 1.0
+            },
+            {
+              "blue": 0.8777777777777778,
+              "silver": 1.0
+            }
+          ],
+          "ringSupport": 0.2916666666666667,
+          "twoDice": 0.4
+        }
+      ],
+      "matchesExpected": true
+    },
+    "3.png:width-320": {
+      "sourceSize": [
+        320,
+        2251
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.523,
+      "matchesExpected": true
+    },
+    "3.png:width-480": {
+      "sourceSize": [
+        480,
+        3377
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.529,
+      "matchesExpected": true
+    },
+    "3.png:width-720": {
+      "sourceSize": [
+        720,
+        5066
+      ],
+      "workingSize": [
+        540,
+        3800
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.543,
+      "matchesExpected": true
+    },
+    "3.png:width-1280": {
+      "sourceSize": [
+        1280,
+        9006
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.555,
+      "matchesExpected": true
+    },
+    "3.png:width-1920": {
+      "sourceSize": [
+        1920,
+        13509
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.572,
+      "matchesExpected": true
+    },
+    "3.png:jpeg-50": {
+      "sourceSize": [
+        476,
+        3349
+      ],
+      "workingSize": [
+        540,
+        3799
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.518,
+      "matchesExpected": true
+    },
+    "3.png:no-header-footer": {
+      "sourceSize": [
+        476,
+        3081
+      ],
+      "workingSize": [
+        540,
+        3495
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.444,
+      "matchesExpected": true
+    },
+    "3.png:padded": {
+      "sourceSize": [
+        572,
+        3493
+      ],
+      "workingSize": [
+        540,
+        3298
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.201,
+      "matchesExpected": true
+    },
+    "3.png:row-gap": {
+      "sourceSize": [
+        476,
+        3382
+      ],
+      "workingSize": [
+        540,
+        3837
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.587,
+      "matchesExpected": true
+    },
+    "blank-invalid": {
+      "sourceSize": [
+        720,
+        1280
+      ],
+      "workingSize": [
+        540,
+        960
+      ],
+      "grid": {
+        "identityReliable": false,
+        "reason": "not-enough-grid-evidence"
+      },
+      "counts": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "reviewIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "elapsedSeconds": 0.266,
+      "matchesExpected": true
+    },
+    "one-frame-removed": {
+      "sourceSize": [
+        1080,
+        7616
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 21
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        null,
+        2,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [
+        5
+      ],
+      "elapsedSeconds": 1.515,
+      "matchesExpected": true
+    },
+    "all-owned-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.919,
+      "matchesExpected": true
+    },
+    "all-missing-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "reviewIds": [],
+      "elapsedSeconds": 1.087,
+      "matchesExpected": true
+    },
+    "unknown-digit-3-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [
+        6
+      ],
+      "elapsedSeconds": 1.531,
+      "matchesExpected": true
+    },
+    "unknown-digit-8-synthetic": {
+      "sourceSize": [
+        540,
+        3808
+      ],
+      "workingSize": [
+        540,
+        3808
+      ],
+      "grid": {
+        "identityReliable": true,
+        "columns": 3,
+        "rows": 8,
+        "detectedFrames": 22
+      },
+      "counts": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        null,
+        0,
+        0,
+        1,
+        1,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "reviewIds": [
+        6
+      ],
+      "elapsedSeconds": 1.531,
+      "matchesExpected": true
+    }
+  }
+}

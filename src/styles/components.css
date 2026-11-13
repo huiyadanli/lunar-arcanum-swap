@@ -109,6 +109,7 @@
 .hint.gold, .gold { color: var(--moon-gold); }
 .hint.is-bad { color: var(--bad); }
 .hint.is-warn { color: var(--warn); }
+.hint.is-ok { color: var(--ok); }
 .mono, .uid-mono { font-family: var(--font-mono); letter-spacing: 0.04em; }
 .uid-mono { font-size: 13px; color: var(--text-2); }
 .chev { display: inline-flex; align-items: center; flex: none; color: var(--text-3); margin-left: auto; }
@@ -259,26 +260,44 @@
 @keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(94, 214, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(94, 214, 160, 0); } }
 
 /* ---------- 底部抽屉 BottomSheet ---------- */
+/* 显隐完全由 .open 类驱动：背景淡出时长不短于抽屉下滑时长，visibility 等两者都结束后才切换，
+   因此关闭过程中不会出现背景闪回或空抽屉。 */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 60; background: rgba(4, 6, 14, 0.62);
   display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 0.22s ease, visibility 0s linear 0.22s;
 }
+.sheet-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.2s ease; }
 .sheet {
   width: 100%; max-width: 560px; max-height: 88dvh; overflow: auto; overscroll-behavior: contain;
   padding: 8px 18px calc(18px + var(--safe-bottom));
   border-radius: 24px 24px 0 0; background: var(--surface-2); border: 1px solid var(--border-strong); border-bottom: 0;
   box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, 0.8);
+  transform: translateY(100%); transition: transform 0.22s ease-in;
+}
+.sheet-backdrop.open .sheet { transform: none; transition: transform 0.32s var(--ease-out); }
+/* 随内容一起插入的抽屉（交换名片）首次出现时也有进场动画。 */
+@starting-style {
+  .sheet-backdrop.open { opacity: 0; }
+  .sheet-backdrop.open .sheet { transform: translateY(100%); }
 }
 .sheet-grip { width: 40px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 0 auto 12px; }
 .sheet-title { font-size: 18px; margin-bottom: 12px; }
 .sheet-title small { font-size: 12px; color: var(--text-3); font-weight: 400; margin-left: 6px; }
 .sheet > div > * + .btn, .sheet .btn-block { margin-top: 12px; }
-.sheet-enter { transition: transform 0.32s var(--ease-out); }
-.sheet-leave { transition: transform 0.22s ease-in; }
-.sheet-from { transform: translateY(100%); }
+.sheet-notes > p { margin-top: 8px; }
+.sheet-alt {
+  display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; margin-top: 6px;
+  font-size: 14px; color: var(--arcane);
+}
 @media (min-width: 1024px) {
   .sheet-backdrop { align-items: center; }
-  .sheet { border-radius: 24px; border-bottom: 1px solid var(--border-strong); }
+  .sheet { border-radius: 24px; border-bottom: 1px solid var(--border-strong); transform: translateY(20px) scale(0.98); }
+  @starting-style { .sheet-backdrop.open .sheet { transform: translateY(20px) scale(0.98); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop.open .sheet { transition: none; }
 }
 
 .check-row { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 15px; }

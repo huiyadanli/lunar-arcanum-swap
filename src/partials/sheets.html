@@ -1,55 +1,12 @@
 <!-- 底部抽屉（BottomSheet）。点击背景或按 Esc 可关闭。 -->
-<div class="sheet-backdrop" x-show="sheet" x-transition.opacity x-cloak
+<!-- 显隐只由 .open 类和 CSS 过渡驱动；内容按 sheetView 渲染，关闭动画结束后才卸载，避免离场时闪出空抽屉。 -->
+<div class="sheet-backdrop" :class="{ open: sheet && sheet !== 'namecard' }"
      @click.self="sheet = null" @keydown.escape.window="sheet && (sheet = null)">
-  <div class="sheet" x-show="sheet" x-transition:enter="sheet-enter" x-transition:enter-start="sheet-from" x-transition:leave="sheet-leave" x-transition:leave-end="sheet-from"
-       :class="{ 'sheet-namecard': sheet === 'namecard' }" :aria-label="sheet === 'namecard' ? t('namecard.title') : null" role="dialog" aria-modal="true">
+  <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-grip" aria-hidden="true"></div>
 
-    <!-- 交换名片：高清图片预览即最终导出，默认显示完整 UID，用户可主动隐藏。 -->
-    <template x-if="sheet === 'namecard' && namecard">
-      <div class="namecard-sheet" x-init="$nextTick(() => $el.querySelector('button').focus())">
-        <div class="namecard-heading">
-          <div><small>LUNAR KEEPSAKE</small><h3 class="sheet-title" x-text="t('namecard.title')"></h3></div>
-          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#close"></use></svg></button>
-        </div>
-        <div class="namecard-layout">
-          <div class="namecard-preview" :aria-busy="namecard.generating">
-            <template x-if="namecard.image">
-              <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
-            </template>
-            <div class="namecard-placeholder" x-show="!namecard.image" role="status">
-              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="'assets/icons/ui.svg#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
-              <p x-text="namecard.error || t('namecard.generating')"></p>
-              <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
-            </div>
-          </div>
-          <div class="namecard-options">
-            <p class="namecard-intro" x-text="t('namecard.intro')"></p>
-            <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
-            <label class="check-row namecard-uid">
-              <input type="checkbox" x-model="namecard.includeUid" @change="generateNamecard()" :disabled="namecard.generating || namecard.saving">
-              <span><b x-text="t('namecard.showUid')"></b><small x-text="t('namecard.uidHint')"></small></span>
-            </label>
-            <template x-if="namecard.site">
-              <div class="namecard-destination" :class="{ 'is-bili': namecard.site.kind === 'bili' }">
-                <template x-if="namecard.site.kind === 'bili'">
-                  <div>
-                    <b><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#bilibili"></use></svg><span x-text="t('namecard.biliDestination')"></span></b>
-                    <p x-text="t('namecard.biliHint')"></p>
-                  </div>
-                </template>
-                <a :href="namecard.site.url" target="_blank" rel="noopener noreferrer" x-text="namecard.site.url"></a>
-              </div>
-            </template>
-            <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#download"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
-            <p class="hint center" x-text="t('namecard.saveHint')"></p>
-          </div>
-        </div>
-      </div>
-    </template>
-
     <!-- 卡牌详情：数量编辑（6.3.1） -->
-    <template x-if="sheet === 'card'">
+    <template x-if="sheetView === 'card'">
       <div class="card-sheet" :style="`--card-color:${card(sheetData.id).color}`" @touchstart.passive="touchStart($event)" @touchend="touchEnd($event)">
         <div class="card-sheet-top">
           <button class="icon-btn" @click="sheetStep(-1)" aria-label="上一张"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
@@ -85,7 +42,7 @@
     </template>
 
     <!-- 发布确认（6.3.3） -->
-    <template x-if="sheet === 'publish'">
+    <template x-if="sheetView === 'publish'">
       <div>
         <h3 class="sheet-title"><span x-text="t('publish.title')"></span> · <span x-text="serverName(serverKey)"></span></h3>
         <div class="listing-line">
@@ -128,7 +85,7 @@
     <!-- 发布成功后直接进入交换页，不插入额外确认步骤。 -->
 
     <!-- 关注 UP主（5.5） -->
-    <template x-if="sheet === 'follow'">
+    <template x-if="sheetView === 'follow'">
       <div class="follow-sheet">
         <div class="author">
           <div class="avatar lg"><span class="avatar-letter" x-text="(authorInfo?.nickname || 'UP').slice(0, 1)"></span></div>
@@ -143,10 +100,10 @@
     </template>
 
     <!-- 完成了哪几对 -->
-    <template x-if="sheet === 'done'">
+    <template x-if="sheetView === 'done'">
       <div x-data="{ get m() { return this.matches.find(x => x.id === this.sheetData.matchId) } }">
         <h3 class="sheet-title" x-text="t('match.whichPairs')"></h3>
-        <template x-for="(p, i) in m.pairs" :key="i">
+        <template x-for="(p, i) in (m?.pairs || [])" :key="i">
           <label class="check-row">
             <input type="checkbox" :checked="sheetData.sel.includes(i)" @change="toggleSel(i)">
             <span class="pair-label"><span x-text="cardName(p.give)"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><span x-text="cardName(p.get)"></span></span>
@@ -157,7 +114,7 @@
     </template>
 
     <!-- 遇到问题 -->
-    <template x-if="sheet === 'problem'">
+    <template x-if="sheetView === 'problem'">
       <div>
         <h3 class="sheet-title" x-text="t('match.problemTitle')"></h3>
         <template x-for="r in reasons" :key="r">
@@ -172,13 +129,13 @@
     </template>
 
     <!-- 修改 UID -->
-    <template x-if="sheet === 'uid'">
+    <template x-if="sheetView === 'uid'">
       <div class="uid-form">
         <h3 id="edit-uid-title" class="sheet-title" x-text="t('onboard.uidTitle')"></h3>
         <p class="hint is-warn" x-show="listing" x-text="t('me.uidLocked')"></p>
         <div class="uid-field" :class="{ 'is-bad': uidState.state === 'invalid' }">
           <input class="uid-input" inputmode="numeric" autocomplete="off" maxlength="13" aria-labelledby="edit-uid-title"
-                 :placeholder="t('onboard.uidPlaceholder')" :value="group(uidInput)" @input="onUidInput($event)">
+                 :placeholder="t('onboard.uidPlaceholder')" :value="uidInput" @input="onUidInput($event)">
         </div>
         <!-- 服务器由 UID 自动识别，不再提供手动选择抽屉。 -->
         <div class="server-slot" role="status" aria-live="polite" aria-atomic="true">
@@ -198,7 +155,7 @@
     </template>
 
     <!-- 扫码到手机 -->
-    <template x-if="sheet === 'qr'">
+    <template x-if="sheetView === 'qr'">
       <div class="center-col">
         <h3 class="sheet-title" x-text="t('me.qr')"></h3>
         <img class="qr" :src="qrSrc" alt="QR">
@@ -207,7 +164,7 @@
     </template>
 
     <!-- Box 导出 / 导入：粘贴字母码自动识别，校验通过后一次应用全部选牌设置。 -->
-    <template x-if="sheet === 'exportBox'">
+    <template x-if="sheetView === 'exportBox'">
       <div class="box-code-sheet">
         <h3 class="sheet-title" x-text="t('me.exportBox')"></h3>
         <p class="hint" x-text="t('me.boxExportHint')"></p>
@@ -216,26 +173,147 @@
         <button class="btn btn-primary btn-block" @click="copy(boxCode)" x-text="t('me.boxCopy')"></button>
       </div>
     </template>
-    <template x-if="sheet === 'importBox'">
-      <div class="box-code-sheet" x-init="$nextTick(() => $el.querySelector('textarea').focus())">
+    <template x-if="sheetView === 'importBox'">
+      <div class="box-code-sheet" x-init="$nextTick(() => $el.querySelector('textarea').focus({ preventScroll: true }))">
         <h3 class="sheet-title" x-text="t('me.importBox')"></h3>
         <p class="hint" x-text="t('me.boxImportHint')"></p>
         <label class="field-label" for="box-import-code" x-text="t('me.boxCode')"></label>
         <textarea id="box-import-code" class="box-code-input mono" rows="4" maxlength="512" placeholder="LASB1-…" spellcheck="false" autocapitalize="characters" autocomplete="off" x-model="boxImportInput" @input="boxImportInput = $event.target.value; previewBoxImport()" :aria-invalid="!!boxImportError" aria-describedby="box-import-status"></textarea>
-        <div id="box-import-status" aria-live="polite">
+        <div id="box-import-status" class="sheet-notes" aria-live="polite">
           <p class="hint is-bad" x-show="boxImportError" x-text="boxImportError"></p>
           <template x-if="boxImportPreview">
-            <p class="hint" x-text="t('me.boxRecognized', { mode: t(boxImportPreview.mode === 'full' ? 'box.full' : 'box.quick'), n: boxImportPreview.counts.filter(n => n > 0).length, total: boxImportPreview.counts.reduce((a, b) => a + b, 0) })"></p>
+            <p class="hint is-ok" x-text="t('me.boxRecognized', { mode: t(boxImportPreview.mode === 'full' ? 'box.full' : 'box.quick'), n: boxImportPreview.counts.filter(n => n > 0).length, total: boxImportPreview.counts.reduce((a, b) => a + b, 0) })"></p>
+          </template>
+          <p class="hint is-warn" x-show="activeMatches.length" x-text="t('me.boxImportLocked')"></p>
+          <p class="hint is-warn" x-show="listing && !activeMatches.length" x-text="t('me.boxImportListing')"></p>
+        </div>
+        <button class="btn btn-primary btn-block" :disabled="!boxImportPreview || busy || activeMatches.length" @click="importBox()" x-text="t('me.boxImportApply')"></button>
+        <button class="sheet-alt" @click="openImageBoxImport()">
+          <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#cards'"></use></svg><span x-text="t('imageImport.entry')"></span>
+        </button>
+      </div>
+    </template>
+
+    <!-- 图片导入只编辑临时草稿，确认提交前不会改变当前Box。 -->
+    <!-- 标题与底部操作固定，中间内容单独滚动：长列表里也始终能看到“导入”按钮。 -->
+    <template x-if="sheetView === 'imageImport' && imageImport">
+      <div class="image-import-sheet">
+        <div class="image-import-heading">
+          <h3 class="sheet-title" x-text="t('imageImport.title')"></h3>
+          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#close'"></use></svg></button>
+        </div>
+
+        <div class="image-import-body">
+          <p class="hint" x-show="!imageImport.url" x-text="t('imageImport.description')"></p>
+          <label class="image-import-picker" :class="{ compact: imageImport.url }" @dragover.prevent @drop.prevent="selectImageBoxFile($event.dataTransfer.files[0])">
+            <input id="image-import-file" type="file" accept="image/*" :aria-label="t('imageImport.select')"
+                   @change="selectImageBoxFile($event.target.files[0]); $event.target.value = ''">
+            <span class="image-import-picker-icon"><svg class="icon icon-lg" aria-hidden="true"><use :href="imageImportIcons + '#import'"></use></svg></span>
+            <span class="image-import-picker-text">
+              <b x-text="t(imageImport.url ? 'imageImport.replace' : 'imageImport.select')"></b>
+              <small x-text="imageImport.fileName || t('imageImport.dropHint')"></small>
+            </span>
+          </label>
+
+          <div class="image-import-progress" x-show="imageImport.phase === 'recognizing'" role="status" aria-live="polite">
+            <div class="image-import-progress-top">
+              <span x-text="t('imageImport.recognizing', { percent: imageImport.progress })"></span>
+              <button class="link-btn" @click="stopImageBoxRecognition()" x-text="t('imageImport.stop')"></button>
+            </div>
+            <progress max="100" :value="imageImport.progress" :aria-label="t('imageImport.recognizing', { percent: imageImport.progress })"></progress>
+          </div>
+          <p class="image-import-note" x-show="imageImport.error" role="status">
+            <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#alert'"></use></svg><span x-text="imageImport.error"></span>
+          </p>
+
+          <template x-if="imageImport.url">
+            <div class="image-import-calibration" :class="{ open: imageImport.calibrating }">
+              <button class="image-import-toggle" :aria-expanded="imageImport.calibrating" @click="imageImport.calibrating = !imageImport.calibrating">
+                <span x-text="t('imageImport.calibrate')"></span>
+                <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#chevron-right'"></use></svg>
+              </button>
+              <div class="image-import-calibration-body" x-show="imageImport.calibrating">
+                <p class="hint" x-text="t('imageImport.cropHint')"></p>
+                <div class="image-import-source">
+                  <div class="image-import-stage" :class="{ selecting: imageImport.calibrating }"
+                       @pointerdown.prevent="imageCropStart($event)" @pointermove="imageCropMove($event)"
+                       @pointerup="imageCropEnd($event)" @pointercancel="imageImport && (imageImport.drag = null)">
+                    <img :src="imageImport.url" :alt="t('imageImport.sourceAlt')" draggable="false">
+                    <template x-if="imageImport.crop">
+                      <span class="image-import-crop" :style="{ left: imageImport.crop.x * 100 + '%', top: imageImport.crop.y * 100 + '%', width: imageImport.crop.width * 100 + '%', height: imageImport.crop.height * 100 + '%' }"></span>
+                    </template>
+                  </div>
+                </div>
+                <button class="link-btn" x-show="imageImport.crop" :disabled="imageImport.phase === 'recognizing'" @click="imageImport.crop = null" x-text="t('imageImport.resetCrop')"></button>
+                <div class="image-import-controls">
+                  <label><span x-text="t('imageImport.columns')"></span><input type="number" min="1" max="22" step="1" inputmode="numeric" x-model="imageImport.columns" :disabled="imageImport.phase === 'recognizing'"></label>
+                  <label><span x-text="t('imageImport.firstId')"></span><select x-model="imageImport.firstId" :disabled="imageImport.phase === 'recognizing'">
+                    <template x-for="c in cards" :key="c.id"><option :value="c.id" x-text="c.id + ' · ' + cardName(c.id)"></option></template>
+                  </select></label>
+                </div>
+                <button class="btn btn-ghost btn-block" :disabled="imageImport.phase === 'recognizing' || imageImport.drag" @click="runImageBoxRecognition(true)" x-text="t('imageImport.scanAgain')"></button>
+              </div>
+            </div>
+          </template>
+
+          <template x-if="imageImport.phase === 'review'">
+            <div class="image-import-review">
+              <div class="image-import-summary" :class="{ pending: imageImportStats.pending }" aria-live="polite">
+                <b x-text="t('imageImport.summary', imageImportStats)"></b>
+                <span x-text="imageImportStats.pending ? t('imageImport.pending', { n: imageImportStats.pending }) : t('imageImport.allRecognized')"></span>
+                <button class="btn btn-ghost sm" x-show="imageImportStats.pending" @click="keepUnrecognizedImageCounts()" x-text="t('imageImport.keepRemaining')"></button>
+              </div>
+              <p class="hint" x-text="t('imageImport.countHint')"></p>
+              <template x-if="imageImport.focusedCard">
+                <div class="image-import-detail">
+                  <div class="image-import-detail-top">
+                    <b x-text="cardName(imageImport.focusedCard.id)"></b>
+                    <button class="link-btn" @click="imageImport.focusedCard = null" x-text="t('imageImport.closeSource')"></button>
+                  </div>
+                  <img :src="imageImport.focusedCard.url" :alt="t('imageImport.sourceCard', { card: cardName(imageImport.focusedCard.id) })">
+                </div>
+              </template>
+              <div class="image-import-counts">
+                <template x-for="c in cards" :key="c.id">
+                  <div class="image-import-row" :class="{ review: imageImport.counts[c.id - 1] === null, changed: imageImport.counts[c.id - 1] !== null && imageImport.counts[c.id - 1] !== count(c.id) }">
+                    <img :src="c.img.s" alt="" loading="lazy">
+                    <div class="image-import-row-name">
+                      <label :for="'image-import-count-' + c.id" x-text="cardName(c.id)"></label>
+                      <div class="image-import-row-meta">
+                        <small x-text="t('imageImport.current', { n: count(c.id) })"></small>
+                        <span class="image-import-tag is-review" x-show="imageImport.counts[c.id - 1] === null" x-text="t('imageImport.review')"></span>
+                        <span class="image-import-tag is-edited" x-show="imageImport.edited[c.id] && imageImport.counts[c.id - 1] !== null" x-text="t('imageImport.edited')"></span>
+                      </div>
+                      <div class="image-import-row-links" x-show="imageImport.counts[c.id - 1] === null || imageImport.cards.some(item => item.id === c.id)">
+                        <button class="link-btn" x-show="imageImport.counts[c.id - 1] === null" @click="keepImageBoxCount(c.id)" x-text="t('imageImport.keepCurrent')"></button>
+                        <button class="link-btn" x-show="imageImport.cards.some(item => item.id === c.id)" @click="showImageBoxSource(c.id)" x-text="t('imageImport.source')"></button>
+                      </div>
+                    </div>
+                    <input :id="'image-import-count-' + c.id" type="number" min="0" max="99" step="1" inputmode="numeric" placeholder="?"
+                           :value="imageImport.counts[c.id - 1] === null ? '' : imageImport.counts[c.id - 1]"
+                           @input="editImageBoxCount(c.id, $event.target.value)" :aria-invalid="imageImport.counts[c.id - 1] === null"
+                           :aria-label="t('imageImport.countFor', { card: cardName(c.id) })">
+                  </div>
+                </template>
+              </div>
+            </div>
           </template>
         </div>
-        <p class="hint is-warn" x-show="activeMatches.length" x-text="t('me.boxImportLocked')"></p>
-        <p class="hint is-warn" x-show="listing && !activeMatches.length" x-text="t('me.boxImportListing')"></p>
-        <button class="btn btn-primary btn-block" :disabled="!boxImportPreview || busy || activeMatches.length" @click="importBox()" x-text="t('me.boxImportApply')"></button>
+
+        <div class="image-import-actions">
+          <p class="hint is-warn" x-show="activeMatches.length" x-text="t('me.boxImportLocked')"></p>
+          <p class="hint is-warn" x-show="listing && !activeMatches.length" x-text="t('me.boxImportListing')"></p>
+          <button class="btn btn-primary btn-block" :disabled="!canApplyImageBoxImport" @click="applyImageBoxImport()" x-text="t('imageImport.apply')"></button>
+          <div class="image-import-bottom-links">
+            <button class="link-btn muted" @click="sheet = null" x-text="t('imageImport.cancel')"></button>
+            <button class="link-btn" @click="openBoxImport()" x-text="t('imageImport.codeInstead')"></button>
+          </div>
+        </div>
       </div>
     </template>
 
     <!-- 原型调试面板 -->
-    <template x-if="sheet === 'debug'">
+    <template x-if="sheetView === 'debug'">
       <div class="debug">
         <h3 class="sheet-title">原型调试 <small>M0 · 仅原型</small></h3>
         <div class="debug-row"><span>运行环境</span>
@@ -271,3 +349,56 @@
     </template>
   </div>
 </div>
+
+<!-- 交换名片：高清图片预览即最终导出，默认显示完整 UID，用户可主动隐藏。 -->
+<!-- 独立保留名片内容与尺寸，关闭时整层统一淡出，避免先变成空白的小抽屉。 -->
+<!-- 与通用抽屉一样只用 .open 类和 CSS 过渡控制显隐，不混用 Alpine 的父子过渡（时长不一致时外层会闪回）。 -->
+<template x-if="namecard">
+  <div class="sheet-backdrop" :class="{ open: sheet === 'namecard' }"
+       @click.self="sheet = null" @keydown.escape.window="sheet === 'namecard' && (sheet = null)"
+       x-effect="if (sheet === 'namecard') $nextTick(() => { if (sheet === 'namecard') $el.querySelector('button').focus({ preventScroll: true }) })">
+    <div class="sheet sheet-namecard"
+         :aria-label="t('namecard.title')" role="dialog" aria-modal="true">
+      <div class="sheet-grip" aria-hidden="true"></div>
+      <div class="namecard-sheet">
+        <div class="namecard-heading">
+          <div><small>LUNAR KEEPSAKE</small><h3 class="sheet-title" x-text="t('namecard.title')"></h3></div>
+          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#close"></use></svg></button>
+        </div>
+        <div class="namecard-layout">
+          <div class="namecard-preview" :aria-busy="namecard.generating">
+            <template x-if="namecard.image">
+              <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
+            </template>
+            <div class="namecard-placeholder" x-show="!namecard.image" role="status">
+              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="'assets/icons/ui.svg#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
+              <p x-text="namecard.error || t('namecard.generating')"></p>
+              <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
+            </div>
+          </div>
+          <div class="namecard-options">
+            <p class="namecard-intro" x-text="t('namecard.intro')"></p>
+            <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
+            <label class="check-row namecard-uid">
+              <input type="checkbox" x-model="namecard.includeUid" @change="generateNamecard()" :disabled="namecard.generating || namecard.saving">
+              <span><b x-text="t('namecard.showUid')"></b><small x-text="t('namecard.uidHint')"></small></span>
+            </label>
+            <template x-if="namecard.site">
+              <div class="namecard-destination" :class="{ 'is-bili': namecard.site.kind === 'bili' }">
+                <template x-if="namecard.site.kind === 'bili'">
+                  <div>
+                    <b><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#bilibili"></use></svg><span x-text="t('namecard.biliDestination')"></span></b>
+                    <p x-text="t('namecard.biliHint')"></p>
+                  </div>
+                </template>
+                <a :href="namecard.site.url" target="_blank" rel="noopener noreferrer" x-text="namecard.site.url"></a>
+              </div>
+            </template>
+            <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#download"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
+            <p class="hint center" x-show="namecard.image" x-text="t('namecard.saveHint', { size: Math.ceil((namecard.image?.bytes || 0) / 1024) })"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

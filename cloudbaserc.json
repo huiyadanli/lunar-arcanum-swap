@@ -1,0 +1,9 @@
+{
+  "envId": "lunar-arcanum-swap-d9cl8ad90b4e4",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    { "name": "swap-api", "type": "HTTP", "runtime": "Nodejs20.19", "timeout": 30 },
+    { "name": "swap-maintenance", "type": "Event", "runtime": "Nodejs20.19", "handler": "index.main", "timeout": 60,
+      "triggers": [{ "name": "every-minute", "type": "timer", "config": "0 * * * * * *" }] }
+  ]
+}

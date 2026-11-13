@@ -13,8 +13,8 @@
         <div class="partner-label" x-text="t('match.partner')"></div>
         <div class="uid-big">
           <span class="uid-label">UID</span>
-          <span id="uid-full" class="uid-digits" x-show="m.partner.uid" x-text="group(m.partner.uid || '')"></span>
-          <span class="uid-digits masked" x-show="!m.partner.uid" x-text="group(m.partner.uidMasked).replace(/\*/g, '•')"></span>
+          <span id="uid-full" class="uid-digits" x-show="m.partner.uid" x-text="(m.partner.uid || '')"></span>
+          <span class="uid-digits masked" x-show="!m.partner.uid" x-text="m.partner.uidMasked.replace(/\*/g, '•')"></span>
         </div>
         <div class="partner-meta">
           <span class="server-badge sm" :data-tone="servers[m.partner.server].tone" x-text="serverName(m.partner.server)"></span>

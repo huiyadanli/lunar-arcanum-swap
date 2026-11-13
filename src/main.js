@@ -4,10 +4,13 @@
 import Alpine from './vendor/alpine-3.14.1.esm.js';
 import { CARDS, CARD_BY_ID, CARD_COUNT } from './data/cards.js';
 import { translate, detectLang, LANGS } from './i18n.js';
-import { resolveUid, maskUid, groupUid, SERVERS } from './lib/uid.js';
+import { resolveUid, maskUid, SERVERS } from './lib/uid.js';
 import { storage } from './lib/storage.js';
 import { encodeBox, decodeBox } from './lib/box-code.js';
+import { parseImageCount, createImageBoxPatch } from './lib/image-box-draft.js';
+import imageImportIcons from '../assets/icons/ui.svg?url';
 import { renderExchangeCard } from './lib/exchange-card.js';
+import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selection.js';
 import { platform, copyText } from './platform/index.js';
 import { api } from './mock/api.js';
 import { dev, setDev } from './mock/dev.js';
@@ -34,9 +37,15 @@ const rid4 = () => Math.random().toString(16).slice(2, 6).toUpperCase();
 
 function app() {
   const saved = storage.get('state', {});
+  // 大图、AbortController等资源不进入Alpine响应式状态或持久化快照。
+  let imageSource = null;
+  let imageController = null;
+  let imageRevision = 0;
+  const SHEET_LEAVE_MS = 260; // 略长于 CSS 中抽屉的离场过渡
   return {
     // ---------- 常量 ----------
     cards: CARDS,
+    imageImportIcons,
     langs: LANGS,
     servers: SERVERS,
     presetKeys: PRESET_KEYS,
@@ -70,6 +79,7 @@ function app() {
     uidInput: '',
     fx: 'high',
     sheet: null,
+    sheetView: null, // 抽屉里正在渲染的内容；关闭动画播完后才清空
     sheetData: {},
     filter: 'all',
     batch: false,
@@ -96,6 +106,7 @@ function app() {
     boxImportInput: '',
     boxImportPreview: null,
     boxImportError: null,
+    imageImport: null,
     qrSrc: null,
     namecard: null,
     _namecardRevision: 0,
@@ -123,6 +134,22 @@ function app() {
         }
       });
       matchMedia('(min-width: 1024px)').addEventListener('change', (e) => (this.wide = e.matches));
+      // 关闭时保留内容直到离场动画结束，否则抽屉会先塌成空框再消失。
+      this.$watch('sheet', (value) => {
+        clearTimeout(this._sheetTimer);
+        if (value) {
+          this.sheetView = value;
+          if (value !== 'imageImport' && this.imageImport) this.disposeImageBoxImport();
+          return;
+        }
+        // 识别任务立即中止，草稿和图片等动画结束再释放。
+        if (this.imageImport) { imageRevision++; imageController?.abort(); imageController = null; }
+        this._sheetTimer = setTimeout(() => {
+          if (this.sheet) return;
+          this.sheetView = null;
+          if (this.imageImport) this.disposeImageBoxImport();
+        }, SHEET_LEAVE_MS);
+      });
 
       // 模拟 SDK 的平台 UI 钩子
       toyUi.confirmProfile = () => new Promise((res) => {
@@ -268,7 +295,6 @@ function app() {
       return key ? SERVERS[key].name[this.lang === 'en' ? 'en' : 'zh-CN'] : '—';
     },
     mask: maskUid,
-    group: groupUid,
     moonPath,
     timeLeft(ts) {
       const ms = Math.max(0, ts - Date.now());
@@ -340,7 +366,7 @@ function app() {
     },
     onUidInput(e) {
       this.uidInput = e.target.value.replace(/\D/g, '').slice(0, 10);
-      e.target.value = groupUid(this.uidInput);
+      e.target.value = this.uidInput;
     },
     get uidReady() {
       return this.uidState.state === 'ok';
@@ -660,7 +686,7 @@ function app() {
         await Alpine.nextTick();
         const m = this.matches.find((x) => x.id === id);
         const el = document.getElementById('uid-full');
-        if (el && m?.partner.uid) await decodeText(el, groupUid(m.partner.uid));
+        if (el && m?.partner.uid) await decodeText(el, m.partner.uid);
       } finally {
         this.busy = false;
       }
@@ -772,9 +798,15 @@ function app() {
     },
 
     // ---------- 交换名片：从当前选牌或已发布需求生成独立快照 ----------
+    get namecardSelection() {
+      return getNamecardSelection(this);
+    },
+    get canCreateNamecard() {
+      return hasNamecardSelection(this.namecardSelection);
+    },
     async openNamecard(source = 'box') {
-      const request = source === 'listing' ? this.listing : { give: this.giveMap, want: this.wantList };
-      if (!request || !Object.keys(request.give).length || !request.want.length) {
+      const request = source === 'listing' ? this.listing : this.namecardSelection;
+      if (!hasNamecardSelection(request)) {
         return this.toast(this.t('namecard.chooseCards'));
       }
       this.namecard = {
@@ -796,11 +828,11 @@ function app() {
         const site = current.site || await this.platform.exchangeSite();
         const image = await renderExchangeCard({ ...current, site });
         // 关闭后重新打开或修改选项时，较旧的生成结果不能覆盖新名片。
-        if (revision !== this._namecardRevision) return;
+        if (revision !== this._namecardRevision || this.sheet !== 'namecard') return;
         current.site = site;
         current.image = image;
       } catch (error) {
-        if (revision !== this._namecardRevision) return;
+        if (revision !== this._namecardRevision || this.sheet !== 'namecard') return;
         current.error = this.t(error?.cause === 'toy_url_unavailable' ? 'namecard.toyUnavailable' : 'namecard.failed');
       } finally {
         if (revision === this._namecardRevision) current.generating = false;
@@ -814,7 +846,7 @@ function app() {
         const date = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Shanghai' }).format(current.createdAt);
         const result = await this.platform.saveImage({
           dataUrl: current.image.dataUrl,
-          name: `lunar-swap-${current.site.kind}-${date}.png`,
+          name: `lunar-swap-${current.site.kind}-${date}.${current.image.extension}`,
         });
         this.toast(this.t(result === 'album' ? 'namecard.savedAlbum' : 'namecard.savedDownload'));
       } catch {
@@ -864,6 +896,163 @@ function app() {
       this.sheet = null;
       this.go('box');
       this.toast(this.t('me.boxImported'));
+    },
+    // ---------- 米游社图片导入：识别草稿与当前Box完全分离 ----------
+    disposeImageBoxImport() {
+      imageRevision++;
+      imageController?.abort();
+      imageController = null;
+      imageSource?.dispose();
+      imageSource = null;
+      this.imageImport = null;
+    },
+    openImageBoxImport() {
+      this.disposeImageBoxImport();
+      this.imageImport = {
+        fileName: '', url: null, phase: 'select', progress: 0, error: null,
+        counts: Array(CARD_COUNT).fill(null), edited: {}, cards: [], grid: null,
+        calibrating: false, crop: null, drag: null, columns: 3, firstId: 1, focusedCard: null,
+      };
+      this.sheet = 'imageImport';
+      // 焦点移入抽屉供键盘操作，但不画焦点环：鼠标或触屏打开时它会像一个常驻的选中框。
+      this.$nextTick(() => document.getElementById('image-import-file')?.focus({ preventScroll: true, focusVisible: false }));
+    },
+    async selectImageBoxFile(file) {
+      if (!file || !this.imageImport) return;
+      const revision = ++imageRevision;
+      imageController?.abort();
+      imageSource?.dispose();
+      imageSource = null;
+      const controller = new AbortController();
+      imageController = controller;
+      const current = this.imageImport;
+      Object.assign(current, {
+        fileName: file.name, url: null, phase: 'recognizing', progress: 0, error: null,
+        counts: Array(CARD_COUNT).fill(null), edited: {}, cards: [], grid: null,
+        crop: null, drag: null, calibrating: false, firstId: 1, focusedCard: null,
+      });
+      try {
+        // 只有进入识别流程才加载算法和493字节数字参考，首屏不加载识别资源。
+        const { openImageImportSource } = await import('./lib/miyoushe-box-import.js');
+        if (revision !== imageRevision || this.sheet !== 'imageImport') return;
+        const source = await openImageImportSource(file, { signal: controller.signal });
+        if (revision !== imageRevision || this.sheet !== 'imageImport') { source.dispose(); return; }
+        imageSource = source;
+        current.url = source.url;
+        await this.runImageBoxRecognition();
+      } catch (error) {
+        if (revision !== imageRevision || this.sheet !== 'imageImport' || error.name === 'AbortError') return;
+        current.phase = 'select';
+        current.error = this.t('imageImport.decodeFailed');
+      }
+    },
+    async runImageBoxRecognition(calibrated = false) {
+      if (!imageSource || !this.imageImport) return;
+      const revision = ++imageRevision;
+      imageController?.abort();
+      const controller = new AbortController();
+      imageController = controller;
+      const current = this.imageImport;
+      current.phase = 'recognizing'; current.progress = 0; current.error = null;
+      try {
+        const result = await imageSource.recognize({
+          crop: current.crop ? { ...current.crop } : null,
+          calibrated,
+          columns: calibrated ? Math.max(1, Math.min(22, Math.trunc(Number(current.columns) || 3))) : null,
+          firstId: calibrated ? Math.max(1, Math.min(22, Math.trunc(Number(current.firstId) || 1))) : 1,
+          signal: controller.signal,
+          onProgress: (progress) => {
+            if (revision === imageRevision && this.sheet === 'imageImport') current.progress = Math.round(progress * 100);
+          },
+        });
+        if (revision !== imageRevision || this.sheet !== 'imageImport') return;
+        current.counts = result.counts;
+        current.cards = result.cards;
+        current.grid = result.grid;
+        current.edited = {};
+        current.focusedCard = null;
+        current.phase = 'review';
+        if (!calibrated && result.grid.columns) current.columns = result.grid.columns;
+        if (!result.grid.identityReliable) {
+          current.error = this.t('imageImport.calibrateHint');
+          current.calibrating = true;
+        }
+      } catch (error) {
+        if (revision !== imageRevision || this.sheet !== 'imageImport' || error.name === 'AbortError') return;
+        current.phase = 'review';
+        current.error = this.t('imageImport.recognitionFailed');
+        current.calibrating = true;
+      } finally {
+        if (revision === imageRevision) imageController = null;
+      }
+    },
+    stopImageBoxRecognition() {
+      imageRevision++;
+      imageController?.abort();
+      imageController = null;
+      if (this.imageImport) { this.imageImport.phase = 'review'; this.imageImport.error = this.t('imageImport.stopped'); }
+    },
+    imageCropStart(event) {
+      const current = this.imageImport;
+      if (!current?.calibrating || current.phase === 'recognizing') return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+      current.drag = { x, y };
+      current.crop = { x, y, width: 0, height: 0 };
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    imageCropMove(event) {
+      const current = this.imageImport;
+      if (!current?.drag) return;
+      const rect = event.currentTarget.getBoundingClientRect();
+      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+      current.crop = { x: Math.min(x, current.drag.x), y: Math.min(y, current.drag.y), width: Math.abs(x - current.drag.x), height: Math.abs(y - current.drag.y) };
+    },
+    imageCropEnd(event) {
+      const current = this.imageImport;
+      if (!current?.drag) return;
+      this.imageCropMove(event);
+      current.drag = null;
+      if (current.crop.width < 0.01 || current.crop.height < 0.01) current.crop = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    },
+    editImageBoxCount(id, value) {
+      if (!this.imageImport || this.imageImport.phase === 'recognizing') return;
+      this.imageImport.counts[id - 1] = parseImageCount(value);
+      this.imageImport.edited[id] = true;
+    },
+    keepImageBoxCount(id) {
+      this.editImageBoxCount(id, this.counts[id - 1]);
+    },
+    showImageBoxSource(id) {
+      const card = this.imageImport?.cards.find((item) => item.id === id);
+      if (card && imageSource) this.imageImport.focusedCard = { id, url: imageSource.thumbnail(card.sourceRect) };
+    },
+    keepUnrecognizedImageCounts() {
+      if (!this.imageImport) return;
+      this.imageImport.counts.forEach((value, index) => { if (value === null) this.keepImageBoxCount(index + 1); });
+    },
+    get imageImportStats() {
+      const values = this.imageImport?.counts || [];
+      return { owned: values.filter((value) => value > 0).length, total: values.reduce((sum, value) => sum + (value || 0), 0), pending: values.filter((value) => value === null).length };
+    },
+    get canApplyImageBoxImport() {
+      return this.imageImport?.phase === 'review' && this.imageImportStats.pending === 0 && !this.busy && !this.activeMatches.length;
+    },
+    applyImageBoxImport() {
+      if (this.sheet !== 'imageImport' || !this.canApplyImageBoxImport) return;
+      try {
+        // 提交时重新读取当前交换锁定状态；只一次性替换已确认的数量。
+        const patch = createImageBoxPatch(this.imageImport.counts, this.activeMatches, { keep: this.keep, wantOff: this.wantOff });
+        Object.assign(this, patch);
+        this.sheet = null;
+        this.go('box');
+        this.toast(this.t('imageImport.imported'));
+      } catch (error) {
+        this.toast(this.t(error.message === 'IMAGE_IMPORT_LOCKED' ? 'me.boxImportLocked' : 'imageImport.confirmRemaining'));
+      }
     },
     clearAll() {
       if (!confirm(this.t('me.clearConfirm'))) return;

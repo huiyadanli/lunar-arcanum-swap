@@ -1,17 +1,5 @@
 /* 交换名片：入口延续月夜与鎏金色，抽屉突出最终图片本身。 */
-.namecard-entry {
-  display: flex; align-items: center; gap: 13px; width: 100%; padding: 13px 16px; margin: 0 0 20px;
-  text-align: left; border: 1px solid #d9bd8040; border-radius: 14px;
-  background: radial-gradient(ellipse at 100% 0, #c9a15c16, transparent 65%), linear-gradient(110deg, #d9bd800c, #16213a44);
-  transition: border-color .2s, background-color .2s;
-}
-.namecard-entry:hover:not(:disabled) { border-color: #d9bd8088; background-color: #d9bd8008; }
-.namecard-entry:disabled { opacity: .5; cursor: default; }
-.namecard-entry-icon { display: grid; place-items: center; flex: none; width: 42px; height: 46px; border-radius: 22px 22px 8px 8px; color: var(--moon-gold); background: #d9bd8010; border: 1px solid #d9bd8030; }
-.namecard-entry > span:nth-child(2) { flex: 1; }
-.namecard-entry b { display: block; font-size: 14px; font-weight: 600; color: var(--moon-gold); }
-.namecard-entry small { display: block; font-size: 12px; color: var(--text-2); margin-top: 3px; }
-.namecard-entry > .icon, .namecard-action { color: var(--moon-gold); }
+.namecard-action { color: var(--moon-gold); }
 .sheet.sheet-namecard { max-width: 940px; background: #111b30; }
 .namecard-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .namecard-heading small { color: var(--moon-gold); font: 600 10px var(--font-display); letter-spacing: .16em; }

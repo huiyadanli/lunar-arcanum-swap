@@ -87,7 +87,7 @@
     <h2 class="onboard-title" x-text="t('onboard.uidTitle')"></h2>
     <div class="uid-field" :class="{ 'is-bad': uidState.state === 'invalid' }">
       <input class="uid-input" inputmode="numeric" autocomplete="off" maxlength="13" :placeholder="t('onboard.uidPlaceholder')"
-             :value="group(uidInput)" @input="onUidInput($event)" @keydown.enter="confirmUid()" x-init="$watch('onboardStep', v => v === 1 && $nextTick(() => $el.focus()))">
+             :value="uidInput" @input="onUidInput($event)" @keydown.enter="confirmUid()" x-init="$watch('onboardStep', v => v === 1 && $nextTick(() => $el.focus()))">
     </div>
     <div class="server-slot">
       <template x-if="uidState.state === 'ok'">

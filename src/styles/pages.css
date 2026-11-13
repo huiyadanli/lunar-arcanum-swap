@@ -317,6 +317,7 @@ body.is-welcome #views { padding-bottom: 0; }
 .account-sub .warn { font-size: 13px; color: var(--warn); }
 .sync { align-self: flex-start; font-size: 13px; color: var(--text-2); }
 .sync-error { color: var(--warn); }
+.box-code-sheet .sheet-title { margin-bottom: 8px; }
 .box-code-input { font-family: var(--font-mono); font-size: 16px; line-height: 1.6; letter-spacing: 0.08em; overflow-wrap: anywhere; resize: vertical; }
 .account-uid { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .account-uid .uid-mono { font-size: 14px; color: var(--text-1); }

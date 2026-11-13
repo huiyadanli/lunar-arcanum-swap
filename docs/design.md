@@ -1,9 +1,11 @@
 # LunarArcanumSwap — 月谕圣牌交换站 设计文档
 
-> 版本：v0.3（详细设计稿）· 更新：2026-11-12
-> 状态：UI/UX 为本版重点；后端接口为草案，后续细化。
+> 版本：v0.6（详细设计稿）· 更新：2026-11-13
+> 状态：前端使用模拟接口；后端方案见 [CloudBase 后端概要设计](cloudbase-backend-design.md)，实现及发布状态见 [后端说明](../backend/README.md)。
 > v0.3：对接 B站 Toy JS SDK（`docs/toy-js-sdk-abilities.md`），支持 Toy / 独立站双部署，区分 B站用户与匿名用户（第 3 节）。
 > v0.4：按评审反馈修订——圣牌改用官方译名；交换规则确认（严格 1 换 1，主动匹配单次最多 3 对）；加好友不再区分发起方 / 等待方；UID 全程脱敏，「开始交换」时才显示，B站用户需先关注 UP主；移除排行榜类功能；截图识别 v1 不做；待确认问题已全部答复（第 16 节）。
+> v0.5：后端改为 CloudBase Auth + 云函数 + PostgreSQL，接口由 21 个精简为 11 个，状态统一轮询，首版取消 Redis 和独立事件流，Web Push 延后。
+> v0.6：UID 仅作为可重复填写的游戏匹配信息，不提示重复；需求、匹配权限、次数、信用和屏蔽均归属于交换账号。
 
 ---
 
@@ -21,8 +23,8 @@
 10. 图片识别导入（v1 不做，预留）
 11. 匹配机制
 12. 前端技术方案
-13. 后端接口草案
-14. 数据模型草案
+13. 后端接口概要
+14. 数据模型概要
 15. 里程碑
 16. 已确认事项与遗留问题
 
@@ -77,7 +79,8 @@
 | 换牌需求（Listing） | 发布到匹配池里的一条需求：给出（give，带数量）和想要（want）。 |
 | 匹配（Match） | 两个换牌需求之间配成的一组交换，包含 1 对或多对「你给 X ⇄ 你得 Y」。 |
 | 分区（Region） | 能互相加好友的服务器集合，匹配只在同一分区内进行。 |
-| 账号（Account） | 本站的身份，分为 `bili`（B站用户）和 `anon`（匿名用户）两类，见第 3 节。一个账号最多绑定 1 个原神 UID。 |
+| 账号（Account） | 本站的交换身份，分为 `bili`（B站用户）和 `anon`（匿名用户）两类，见第 3 节。每个账号保存 1 个当前原神 UID，不同账号可填写相同 UID。 |
+| 原神 UID | 用户填写的游戏匹配与加好友信息，用于识别服务器和分区；不验证归属，不作为交换账号标识。 |
 | 运行环境（Env） | `toy-app` / `toy-web` / `standalone`，决定哪些 SDK 能力可用，见 3.1。 |
 
 **文案约定**：需求统一称为「换牌需求」，发起按钮使用「帮我找人换牌」；已找到伙伴但尚未完成的交换展示为「待完成的交换」。
@@ -189,7 +192,7 @@
 | | **B站用户**（`bili`） | **匿名用户**（`anon`） |
 |---|---|---|
 | 成为条件 | 在 Toy 环境中，且已登录 B站（云存储可读写） | 其他所有情况：独立部署、Toy 中未登录、云存储不可用 |
-| 身份凭证 | 后端签发的账号密钥，保存在 **B站云存储**中（随 B站账号走） | 后端签发的设备 token，保存在 localStorage 中 |
+| 身份凭证 | 账号密钥保存在 **B站云存储**中（随 B站账号走），换取 CloudBase 自定义登录会话 | CloudBase 匿名会话，由 SDK 保存在当前设备 |
 | 跨设备 | **自动**：在任意设备用同一 B站账号打开 Toy 即可恢复 | Box 字母码导出 / 导入；身份与交换记录仍属于原设备 |
 | Box 存储 | 本地 + 云存储自动同步，可导出 Box 字母码 | 仅本地，可导出 Box 字母码 |
 | 头像与昵称 | 可以使用 B站头像和昵称（需用户授权，可拒绝） | 系统生成：月相头像 + 「旅人·A3F9」 |
@@ -201,7 +204,7 @@
 **为什么匹配权益不做区分**：
 
 - SDK 不向页面提供 B站 UID，`toyOpenId` 也明确「不是鉴权凭证」；后端没有校验「这个人确实是 B站用户」的服务端接口，任何人都可以在客户端伪造 B站身份。所以 B站用户只能获得**便利性权益**，不能获得**匹配特权**。
-- 防止恶意行为靠的是信用分，而信用分绑定在**原神 UID**上（见 11.5），与账号类型无关，因此不受影响。
+- 信用分记录在**交换账号**上（见 11.5），与账号类型无关；填写相同原神 UID 的其他账号不共享信用或处罚。
 - 平台已确认**不会提供**服务端校验身份的接口，所以这个设计是长期方案，不是过渡方案。
 
 ### 3.3 B站用户身份流程
@@ -214,15 +217,15 @@
   │     ├─ 其他任何错误 → 视为「未登录或不可用」，按匿名用户处理，
   │     │                界面提示「登录 B站 可跨设备同步」；下次启动时再试
   │     ├─ 有 cred → POST /session { provider:'bili', credential }
-  │     │            → 拿到 session token（B站用户）
+  │     │            → 拿到 CloudBase 自定义登录 ticket，由 SDK 建立会话
   │     └─ 没有 cred → POST /session { provider:'bili' }
-  │                  → 后端新建 bili 账号，返回 { token, credential }
+  │                  → 后端新建 bili 账号，返回 { ticket, credential }，由 SDK 建立会话
   │                  → toy.setCloudStorage({ cred })
   │                    （写入失败时重试一次；仍然失败就降级为匿名用户并提示）
   │
   └─ 用户在 UI 中点击头像位置（用户手势）→ toy.getUserProfile()
         ├─ 用户同意 → 拿到 avatar / nickname / toyOpenId
-        │            → POST /session/bili-profile { toyOpenId }
+        │            → PUT /me { toyOpenId }
         │              后端保存 HMAC(toyOpenId)，用于「一个 B站账号对应一个交换身份」的去重
         └─ 用户拒绝 → 继续以 B站用户身份使用，只是不显示 B站头像和昵称
 ```
@@ -239,10 +242,10 @@
 ### 3.4 匿名用户身份流程
 
 ```
-页面启动 → localStorage 中有 token？
-    ├─ 有 → 直接使用
-    └─ 没有 → 等到首次「帮我找人换牌」时才调用 POST /session { provider:'anon' }
-              → { token, accountType:'anon' }
+页面启动 → CloudBase SDK 中有有效匿名会话？
+    ├─ 有 → 复用会话
+    └─ 没有 → 等到首次「帮我找人换牌」时才通过 SDK 匿名登录
+              → 获得 CloudBase 会话，业务身份为 anon
               → 发布换牌需求后直接进入交换页
 ```
 
@@ -255,7 +258,9 @@
 |---|---|
 | 匿名用户之后在 B站 App 里打开 Toy | 使用 B站身份；可通过 Box 字母码导入收藏数据，不提供账号合并 |
 | B站用户想在 Vercel 站点或其他浏览器上使用 | 独立站使用本设备匿名身份，可通过 Box 字母码导入收藏数据；B站身份仅通过 Toy 云存储中的密钥跨设备使用 |
-| 同一原神 UID 被两个账号绑定 | 以先绑定的账号为准；后来的账号提示「该 UID 已被其他身份绑定，请使用原设备或联系我们」 |
+| 不同账号填写同一原神 UID | 正常保存，各自发布需求并匹配；不提示重复、不合并账号、不要求关联或验证归属 |
+
+Toy 与独立站共用匹配池。不同账号即使填写相同 UID，需求、Box、交换记录、次数和信用仍各自独立；仅同一交换账号在不同设备上的使用共享账号状态。客户端不显示 UID 重复标记或关联引导。
 
 ### 3.6 SDK 能力使用一览
 
@@ -316,8 +321,8 @@ SDK 调用约束（按照平台的最佳实践）：
 | 资源路径 | 相对路径（`base: './'`），适配 `/toy/<slug>/` 子路径 | 根路径 `/` |
 | 外部资源 | 全部打包进项目（字体子集等），不依赖 Google Fonts 或第三方 CDN；平台对包大小和 wasm 没有限制 | 同左（两种包保持一致，便于维护） |
 | Service Worker / PWA | 开启（平台已确认允许） | 开启 |
-| Web Push 通知 | 不使用；改为「回到页面时提示」+ 交换标签上的角标 | 可选开启 |
-| API 地址 | `https://api.<域名>/api/v1`。平台已确认部署在 B站时请求外部 API 没有跨域问题；后端 CORS 同时允许 Toy 页面来源和独立站域名 | 同一个 API；**不能使用任何 B站 能力** |
+| Web Push 通知 | 首版使用「回到页面时提示」+ 交换标签上的角标 | 同左；Web Push 延后 |
+| API 地址 | CloudBase HTTP 网关的 `/api/v1`。平台已确认部署在 B站时请求外部 API 没有跨域问题；网关 CORS 同时允许实际 Toy 页面来源和独立站域名 | 同一个 API；**不能使用任何 B站 能力** |
 
 ---
 
@@ -448,7 +453,7 @@ SDK 调用约束（按照平台的最佳实践）：
 | Toast、通知、事件、分享内容 | 一律脱敏 |
 
 - **脱敏格式**：保留前 3 位和后 2 位，中间用 `*` 代替。9 位 UID 显示为 `812****78`，10 位显示为 `181*****45`。前 3 位已经能体现服务器，所以不影响用户辨认。
-- **由后端强制执行**：用户调用 `POST /matches/:id/reveal` 之前，匹配接口只返回 `uidMasked`，前端无法拿到完整 UID（见 13.4）。
+- **由后端强制执行**：用户调用 `POST /matches/:id/reveal` 之前，`/state` 中的匹配只返回 `uidMasked`，前端无法拿到完整 UID（见 [后端概要设计](cloudbase-backend-design.md)）。
 - 「开始交换」（reveal）是不可撤销的动作，后端会记录时间。它的作用有三个：
   1. 让对方看到「对方已开始交换」；
   2. 作为判断「对方没有回应」时的依据之一；
@@ -682,6 +687,8 @@ Box 字母码采用 `LASB1-` 魔数与版本前缀，后接按位打包并经 CR
 
 ## 10. 图片识别导入（v1 不做，预留）
 
+> 当前专项方案（2026-11-13）：以[自适应识别设计](miyoushe-box-import-flexible.md)为实施依据。三张图片共用颜色分割和牌框定位，不再以固定分辨率、宽高比、页首页尾或22个完整牌框作为准入要求；仅数字“2”保留小型二值参考。36个用例已离线验证，网页功能尚未接入。下方补充和预留说明保留为历史记录。
+
 > 2026-11-13 补充：已按米游社完整导出图的固定网格、未获得牌背和“2”字模板完成独立的[图片导入设计与素材准备](miyoushe-box-import.md)。本次不接入网页；下方为此前版本的预留说明，后续实现以专项方案为准。
 
 > 同日跨设备验证：新增[宽高归一化与牌框颜色方案](miyoushe-box-import-adaptive.md)，修正第二张导出图暴露的逐行坐标偏移，支持两种实际导出尺寸；专项方案的定位与拥有状态判断以本修订为准。
@@ -698,11 +705,11 @@ v1 不实现截图识别导入。这个功能有单独的详细要求，后续�
 ### 11.1 匹配池
 
 - 匹配池按分区（`region`）隔离。
-- 每个 UID 同一时间**最多有 1 条有效换牌需求**。
+- 每个交换账号同一时间**最多有 1 条有效换牌需求**；不同账号填写相同 UID 时，各自的需求正常进入匹配池。
 - 换牌需求内容：
   - `give`：`{cardId: qty}`，数量来自 Box 的可换数，或快速模式下手动选择的数量
   - `want`：`[cardId]`，每种默认想要 1 张
-- 维护两个倒排索引：`supply[region][cardId]` 记录哪些换牌需求能给出这张牌，`demand[region][cardId]` 记录哪些换牌需求想要这张牌。22 种牌的规模很小，用内存加 Redis 就足够。
+- 通过 CloudBase PostgreSQL 中的需求、分区和状态索引查询供需，给出的可用数量及想要名额均扣除占用；首版不维护独立 Redis 匹配池。
 
 ### 11.2 即时贪心匹配（来一个，配一个）
 
@@ -717,8 +724,8 @@ v1 不实现截图识别导入。这个功能有单独的详细要求，后续�
 budget = 3                                   // 本次主动扫描最多 3 对
 
 candidates = 同分区所有满足以下条件的换牌需求 B：
-    B 处于等待中，且 B.uid ≠ A.uid            // 被动方没有并发上限
-    A、B 之间 30 天内没有失败过的交换记录
+    B 处于等待中，且 B.accountId ≠ A.accountId // 被动方没有并发上限；不按游戏 UID 排除候选
+    A、B 的交换账号之间 30 天内没有失败过的交换记录
     X = A.give ∩ B.want   (A 能给 B 的)
     Y = B.give ∩ A.want   (B 能给 A 的)
     k = min(|X|, |Y|, budget)   (按可用数量计)，要求 k ≥ 1
@@ -744,8 +751,8 @@ A 的剩余部分转为被动等待，留在匹配池中。
 
 ### 11.3 并发与锁
 
-- 同一分区的匹配操作串行执行（每个分区一个队列，或使用 Redis 锁），避免一张牌被重复分配。
-- 被锁定的卡牌在前端显示「交换中」，不能修改，也不能参与其他匹配。
+- 同一分区的匹配操作通过 PostgreSQL RPC 内的事务锁串行执行，卡牌占用、匹配创建和次数扣减一起提交；编辑、撤回、结算和超时释放遵守相同的锁顺序。
+- 被锁定的卡牌在前端显示「交换中」，不能修改，也不能参与其他匹配。占用以账号及其需求为单位，相同 UID 的其他账号不共享库存或占用。
 
 ### 11.4 失败处理（匹配上了但没换成）
 
@@ -761,11 +768,11 @@ A 的剩余部分转为被动等待，留在匹配池中。
 | 双方说法矛盾（一方说完成、一方说失败） | 争议 | 都不扣分，记录争议次数；争议 ≥ 3 次的账号进入人工复核 | — | 按失败处理 |
 
 - 被报告的一方会收到通知，并可以在 24 小时内**申诉**，提交「我已完成」或补充说明，申诉后按「争议」处理。
-- 失败过的两个 UID，30 天内不会再被互相匹配。
+- 失败过的两个交换账号，30 天内不会再被互相匹配；不影响填写相同 UID 的其他账号。
 
 ### 11.5 信用与优先级
 
-- 信用分初始为 100，上限 150，不对用户公开具体数字，只显示为 5 颗月亮。
+- 信用分按交换账号记录，初始为 100，上限 150，不对用户公开具体数字，只显示为 5 颗月亮；填写相同 UID 的账号各自计算信用、失败次数与冷却。
 - `priority = credit_factor × (1 + min(等待小时数, 72) / 24)`
 
 | 信用分 | 状态 | `credit_factor` |
@@ -782,19 +789,19 @@ A 的剩余部分转为被动等待，留在匹配池中。
 
 | 行为 | 限制 |
 |---|---|
-| 主动发布或**重新匹配** | 每个 UID 每天 1 次，按**各服务器的 04:00** 刷新，与游戏日一致：国服、亚服、港澳台服为 UTC+8，美服为 UTC−5，欧服为 UTC+1 |
+| 主动发布或**重新匹配** | 每个交换账号每天 1 次，按其 UID 所属**服务器的 04:00** 刷新，与游戏日一致：国服、亚服、港澳台服为 UTC+8，美服为 UTC−5，欧服为 UTC+1；相同 UID 的不同账号独立计数，修改 UID 不清空已用次数 |
 | 因对方原因失败后自动回池 | 不计次数 |
 | 等待期间编辑换牌需求 | 不限次数，但编辑后**不会触发主动扫描**，只能等待别人来匹配，防止通过编辑来刷匹配 |
 | 撤回换牌需求 | 不限次数；撤回后当天再次发布会消耗次数 |
 
 ### 11.7 反作弊（v1 轻量处理，不作为重点）
 
-- 限流：每个设备和 IP 的写操作 ≤ 30 次 / 小时；每个 IP 每天绑定的 UID ≤ 3 个。
+- 限流：每个设备和 IP 的写操作 ≤ 30 次 / 小时；不按原神 UID 共享每日匹配额度或设置占用限制。
 - UID 格式校验（见 2.5），拦截明显无效的 UID。
-- 同一个 UID 被多个账号绑定时，以最早绑定的账号为准，其他账号提示使用原设备或联系支持。
+- UID 允许重复填写，不校验账号间的 UID 唯一性，不产生重复提示、标记或额外操作，按普通需求匹配。
 - 数据异常（例如单张牌数量 > 99，或给出总数 > 200）→ 拒绝请求。
-- 提供举报入口（「对方 UID 是假的」等），被多人举报的 UID 进入人工复核。
-- **账号类型不能作为信任依据**：后端无法验证「这个人确实是 B站用户」（见 3.2），所以所有风控规则都以原神 UID、设备和 IP 为准，对两类账号一视同仁。
+- 提供举报入口（「对方 UID 是假的」等），举报关联具体匹配和对方交换账号；被多人举报的账号进入人工复核，不连带处理其他同 UID 账号。
+- **账号类型不能作为信任依据**：后端无法验证「这个人确实是 B站用户」（见 3.2），所以所有风控规则都以交换账号、设备和 IP 为准，对两类账号一视同仁。
 - **留言的二次过滤**：客户端的 `checkInputSafety` 可以被绕过，所以后端对留言再做一次长度限制（≤40 字）和基础敏感词过滤；去除链接、QQ 号、手机号等联系方式，防止引流。被举报的留言会被隐藏。
 - **UID 泄露防护**：完整 UID 只通过 `reveal` 接口返回，并且只返回给匹配双方。reveal 次数异常（例如短时间内大量匹配后立即 reveal 再撤单）的账号进入人工复核，防止有人利用匹配来收集 UID。
 
@@ -874,11 +881,11 @@ A 的剩余部分转为被动等待，留在匹配池中。
 - 身份：
   - B站用户按 3.3 的流程，进入页面时静默建立身份。
   - 匿名用户按 3.4 的流程，首次发布时才建立身份。
-  - token 存在 localStorage 中，键名为 `las.token`。
+  - CloudBase 会话由 SDK 持久化和续期，不再自行保存 `las.token`。
 - 匹配状态更新：
-  - 页面可见时，每 15 秒轮询 `GET /events?since=`。这是我们自己的后端，不受 Toy 云存储的限频约束。
+  - 页面可见时，每 15 秒轮询 `GET /state`，一起获取身份、需求、匹配、额度和汇总统计，不受 Toy 云存储的限频约束。
   - 页面切到后台时停止轮询，切回前台时立即拉取一次。
-  - 独立站开启 Web Push 后，由推送唤起通知。
+  - 首版统一在页面内提示，Web Push 延后，不建设独立事件流。
   - v1 不使用 WebSocket，保持后端简单。
 
 ### 12.5 平台适配层
@@ -915,96 +922,61 @@ platform = {
 
 ---
 
-## 13. 后端接口草案
+## 13. 后端接口概要
 
-> REST + JSON，前缀 `/api/v1`。鉴权方式：`Authorization: Bearer <sessionToken>`。以下只列出接口和主要字段，细节后续补充。
-> 跨域：允许 `https://www.bilibili.com`（Toy 包）和独立站域名，不使用 cookie。
+接口清单和架构以 [CloudBase 后端概要设计](cloudbase-backend-design.md) 为准，共 11 个接口，采用 REST + JSON，前缀 `/api/v1`。
 
-### 13.1 会话与身份
+### 13.1 接口收敛
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/session` | 统一入口，按 `provider` 区分：<br>• `{ provider: "anon" }` → `{ token, accountType: "anon" }`<br>• `{ provider: "bili" }`（云存储中没有密钥时）→ `{ token, accountType: "bili", credential }`，前端把 `credential` 写入云存储<br>• `{ provider: "bili", credential }` → `{ token, accountType: "bili" }`；密钥无效时返回 401 `CREDENTIAL_INVALID` |
-| POST | `/session/bili-profile` | `{ toyOpenId }`（用户授权后才调用）。后端只保存 HMAC；如果该 HMAC 已关联到**另一个**账号，返回 409 `BILI_ALREADY_LINKED`，前端提示身份关联冲突并提供反馈入口 |
-| GET | `/me` | 当前身份：`{ accountType, uid, uidMasked, server, region, creditLevel, completedCount, dailyQuota: { used, resetAt } }` |
-| PUT | `/me` | 绑定或修改 UID：`{ uid }`，服务器按 UID 自动识别；有已发布的换牌需求时返回 409 |
+- `GET /state` 合并身份、当前需求、匹配列表与详情、额度及汇总统计；历史分页返回，当前需求不存在时返回 `null`。
+- `GET /config` 保留配置下发；UID 解析复用前后端规则，绑定时由后端再次校验。
+- 保留发布、编辑、撤回、重新匹配、开始交换和结果确认这些有独立业务语义的操作。
+- 申诉与举报合并为 `POST /matches/:id/feedback`，B站资料去重并入 `PUT /me`。
+- 每 15 秒轮询状态，替代事件接口；Web Push 订阅延后。
 
-> 不提供「只用 toyOpenId 登录」的接口，原因见 3.3。
+### 13.2 鉴权与约束
 
-### 13.2 配置与工具
+匿名用户使用 CloudBase SDK 匿名登录；B站用户通过 `/session` 将账号密钥换成自定义登录 Ticket，再由 SDK 建立会话。业务接口验证 CloudBase 访问令牌，不自建会话表或续期接口。不提供「只用 toyOpenId 登录」的接口，原因见 3.3。
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/config` | UID 规则表、各服日刷新时区、限频参数、卡牌元数据版本、功能开关、留言预设短语（双语）、`authorMid`（UP主 mid） |
-| GET | `/uid/resolve?uid=` | 返回 `{ valid, server, region }`（与前端规则一致，用于兜底） |
-| GET | `/stats?region=` | 等待人数、每张牌的供给 / 需求 / 稀缺度 |
+UID 只校验格式并识别服务器，允许不同账号重复填写，保存与匹配均不返回重复状态；有本人账号的有效需求或未结束匹配时不允许修改 UID。需求归属和匹配访问按账号 ID 校验，不能通过相同 UID 访问其他账号的数据。完整 UID 仅向已开始交换的参与者展示，匹配结束后不再下发。匿名用户不能提交自由文本留言，服务端仍对所有留言执行过滤。
 
-### 13.3 换牌需求
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/listings` | 发布：`{ give: {id: qty}, want: [id], mode: "quick"\|"box", note?: { preset: "online_tonight" } \| { text: "…" } }` → `{ listing, matches: [...] }`（立即匹配的结果一并返回）。<br>当日次数已用完时返回 429；匿名账号提交 `note.text` 时返回 403 `NOTE_TEXT_FORBIDDEN`；留言未通过后端过滤时返回 422 `NOTE_REJECTED` |
-| GET | `/listings/current` | 当前换牌需求（没有时返回 404） |
-| PATCH | `/listings/current` | 等待中编辑 give / want（不触发主动扫描） |
-| DELETE | `/listings/current` | 撤回（释放未锁定的部分） |
-| POST | `/listings/current/rematch` | 重新匹配（消耗当日次数）→ `{ matches }` |
-
-### 13.4 匹配
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/matches?status=active\|history&cursor=` | 列表 |
-| GET | `/matches/:id` | 详情：`{ partner: { uidMasked, uid?, server, creditLevel, note? }, pairs: [{ give, get }], status, expiresAt, revealed, partnerRevealed, myConfirm, partnerConfirm }`。<br>`uid` 只在自己调用过 reveal 并且匹配仍在进行时返回；匹配结束后不再返回。<br>`partner` 中**不包含**账号类型和 B站资料。<br>不区分角色（没有 `role` 字段） |
-| POST | `/matches/:id/reveal` | 开始交换，返回 `{ uid }`。可以重复调用（幂等），后端记录首次调用时间，并向对方推送 `partner_revealed` 事件 |
-| POST | `/matches/:id/confirm` | `{ result: "completed"\|"failed", completedPairs?: [idx], reason?: enum, note? }` |
-| POST | `/matches/:id/appeal` | 申诉：`{ note }` |
-| POST | `/matches/:id/report` | 举报对方：`{ type: "fake_uid"\|"abuse"\|..., note }` |
-
-### 13.5 事件与通知
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/events?since=<cursor>` | 增量事件：`matched` / `partner_revealed` / `partner_confirmed` / `match_failed` / `expired` / `appeal`。事件内容中的 UID 一律脱敏 |
-| POST | `/push/subscribe` | 注册 Web Push 订阅（只有独立站使用） |
-| DELETE | `/push/subscribe` | 取消订阅 |
-
-### 13.6 统一错误格式
+### 13.3 统一错误格式
 
 ```json
-{ "error": { "code": "DAILY_LIMIT", "message": "今日重新匹配次数已用完", "retryAt": "2026-11-13T04:00:00+08:00" } }
+{ "error": { "code": "DAILY_LIMIT", "message": "今日重新匹配次数已用完", "retryAt": "2026-11-14T04:00:00+08:00" }, "requestId": "…" }
 ```
 
-常见错误码：`UID_INVALID`、`UID_TAKEN`、`DAILY_LIMIT`、`COOLDOWN`、`LISTING_EXISTS`、`CARDS_LOCKED`、`RATE_LIMITED`、`CREDENTIAL_INVALID`、`BILI_ALREADY_LINKED`、`NOTE_TEXT_FORBIDDEN`、`NOTE_REJECTED`。
+常见错误码：`UID_INVALID`、`DAILY_LIMIT`、`COOLDOWN`、`LISTING_EXISTS`、`CARDS_LOCKED`、`RATE_LIMITED`、`CREDENTIAL_INVALID`、`BILI_ALREADY_LINKED`、`NOTE_TEXT_FORBIDDEN`、`NOTE_REJECTED`。原神 UID 重复正常成功，不返回冲突错误。
 
 ---
 
-## 14. 数据模型草案
+## 14. 数据模型概要
 
 ```
-Account    (id, type[anon|bili], credentialHash?,          -- bili：云存储中的密钥
+Account    (id, authUserId UNIQUE, type[anon|bili], credentialHash?, -- bili：云存储中的密钥，仅存哈希
             toyOpenIdHmac? UNIQUE,                          -- bili：授权后才有，只用于去重
-            uid? UNIQUE, createdAt)
-Session    (id, accountId, tokenHash, env[toy-app|toy-web|standalone],
-            createdAt, lastSeenAt, ip)
-Player     (uid PK, server, region, credit, completedCount, failStreak,
-            cooldownUntil?, dailyQuotaUsedAt?, createdAt)  -- 信用跟随原神 UID，与账号类型无关
-Listing    (id, uid, region, give JSON{id:qty}, want int[], reserved JSON{id:qty},
-            mode, note JSON{preset|text}?, status[waiting|closed], createdAt, updatedAt)
-Match      (id, region, uidA, uidB, scannedBy,             -- scannedBy：哪一方的主动扫描产生了这个匹配（用于计算 3 对上限）
+            createdAt)
+Player     (accountId PK, uid?, server, region, credit, completedCount, failStreak,
+            cooldownUntil?, dailyQuotaUsedAt?, createdAt)  -- 信用跟随交换账号，与账号类型无关；原神 UID 可重复
+Listing    (id, accountId, uidSnapshot, region, give JSON{id:qty}, want int[], reservedGive JSON{id:qty}, reservedWant int[],
+            mode, note JSON{preset|text}?, status[waiting|closed], version, createdAt, updatedAt)
+Match      (id, region, accountIdA, accountIdB, uidSnapshotA, uidSnapshotB, listingA, listingB, scannedBy, -- scannedBy：哪一方账号的主动扫描产生了这个匹配（用于计算 3 对上限）
             pairs JSON[{aGives, bGives}], revealedAtA?, revealedAtB?,
-            status[matched|completed|failed|expired|disputed],
+            status[matched|confirming|completed|failed|expired|disputed],
             confirmA JSON?, confirmB JSON?, expiresAt, createdAt)
-Event      (id, uid, type, payload JSON, createdAt)        -- 供 /events 轮询
-PairBlock  (uidA, uidB, until)                             -- 失败过的两人互相屏蔽
-Report     (id, reporterUid, targetUid, matchId?, type, note, createdAt)
+PairBlock  (accountIdA, accountIdB, until)                 -- 失败过的两人互相屏蔽，按交换账号记录
+Feedback   (id, reporterAccountId, targetAccountId, matchId, kind[appeal|report], reason, note, status, createdAt)
+RequestRecord (id, accountId?, idempotencyKey?, requestHash?, result?, deviceHash?, ipHash?, createdAt, expiresAt)
 ```
 
-存储建议：PostgreSQL 存持久数据，Redis 存匹配池索引、锁和限流。后端语言不限（Node / Go 均可），v1 用单体服务即可。
+使用 CloudBase PostgreSQL 持久化业务数据，内部 RPC 执行事务和占用控制；短期请求记录用于幂等与限频。不保存 Session 和 Event，分别由 CloudBase Auth 与状态轮询替代。云函数使用 Node.js，首版由一个 HTTP 函数和一个定时事件函数组成。
+
+所有权、关联外键及业务额度以账号 ID 为依据。`Player.uid` 是可重复的游戏信息，不设唯一约束；换牌需求与匹配保留 UID 快照，用于服务器识别、脱敏和开始交换后的展示。
 
 隐私要求：
 
 - `toyOpenId` 原文**不落库**，只保存 `HMAC(serverSecret, toyOpenId)`。
-- 请求日志中过滤 `toyOpenId`、`credential`、`token` 字段。
+- 请求日志中过滤 `toyOpenId`、`credential`、`ticket`、`token` 字段和认证请求头。
 - B站昵称和头像不上传后端（只在本机展示）。
 
 ---
@@ -1023,7 +995,7 @@ Report     (id, reporterUid, targetUid, matchId?, type, note, createdAt)
 
 ## 16. 已确认事项与遗留问题
 
-### 16.1 已确认（2026-11-12）
+### 16.1 已确认（2026-11-12，2026-11-13 补充）
 
 | # | 问题 | 结论 | 体现在 |
 |---|---|---|---|
@@ -1041,6 +1013,7 @@ Report     (id, reporterUid, targetUid, matchId?, type, note, createdAt)
 | 12 | 服务端身份校验 | 平台不会提供 | 3.2 |
 | 13 | 分享 / 二维码 `path` 能否带 hash | 可以，深层链接直接用 `index.html#/trade` | 3.6 |
 | 14 | 未登录时云存储的错误类型 | 未知 → 采用「非限流错误一律按未登录处理」的策略 | 3.3 |
+| 15 | 重复原神 UID | UID 仅为游戏匹配信息，允许不同账号重复填写并正常匹配，不向用户提示重复；账号状态各自独立 | 3.5、11、13、14 |
 
 ### 16.2 遗留问题
 
