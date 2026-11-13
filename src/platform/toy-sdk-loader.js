@@ -1,9 +1,9 @@
 const SDK_URL = 'https://s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js';
 const pendingLoads = new WeakMap();
 
-/** 只接受 B站主域名及子域名，避免误认 bilibili.com.example.com 等地址。 */
+/** 只接受 bilibili.com / bilibilitoy.com 及其子域名，避免误认 bilibili.com.example.com 等地址。 */
 export function isBilibiliHost(hostname) {
-  return /(^|\.)bilibili\.com$/i.test(hostname);
+  return /(^|\.)(bilibili|bilibilitoy)\.com$/i.test(hostname);
 }
 
 /** 在平台初始化前等待真实 SDK；独立站不下载、不启用真实 Toy SDK。 */

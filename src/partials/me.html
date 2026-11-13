@@ -12,7 +12,7 @@
         <template x-if="!(accountType === 'bili' && profile)">
           <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.35)" class="moon-lit"/></svg>
         </template>
-        <span class="avatar-tag" x-show="accountType === 'bili'"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bilibili"></use></svg></span>
+        <span class="avatar-tag" x-show="accountType === 'bili'"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bilibili'"></use></svg></span>
       </div>
       <div class="account-name">
         <b x-text="displayName"></b>
@@ -23,16 +23,16 @@
     <template x-if="accountType === 'bili'">
       <div class="account-sub">
         <button class="sync" :class="'sync-' + syncState" @click="flushCloudSync()">
-          <span x-show="syncState === 'synced'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cloud-check"></use></svg> <span x-text="t('me.synced')"></span></span>
-          <span x-show="syncState === 'syncing'"><svg class="icon icon-sm icon-spin" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#refresh"></use></svg> <span x-text="t('me.syncing')"></span></span>
-          <span x-show="syncState === 'error'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#alert"></use></svg> <span x-text="t('me.syncError')"></span></span>
+          <span x-show="syncState === 'synced'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#cloud-check'"></use></svg> <span x-text="t('me.synced')"></span></span>
+          <span x-show="syncState === 'syncing'"><svg class="icon icon-sm icon-spin" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#refresh'"></use></svg> <span x-text="t('me.syncing')"></span></span>
+          <span x-show="syncState === 'error'"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#alert'"></use></svg> <span x-text="t('me.syncError')"></span></span>
         </button>
         <button class="link-btn" x-show="!profile && !profileDeclined" @click="useBiliProfile()" x-text="t('welcome.useBili')"></button>
       </div>
     </template>
     <template x-if="accountType === 'anon'">
       <div class="account-sub">
-        <p class="warn"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#alert"></use></svg> <span x-text="t('me.anonWarn')"></span></p>
+        <p class="warn"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#alert'"></use></svg> <span x-text="t('me.anonWarn')"></span></p>
         <p class="hint" x-show="loginHint" x-text="t('me.loginHint')"></p>
       </div>
     </template>
@@ -40,7 +40,7 @@
     <div class="account-uid">
       <span class="server-badge sm" :data-tone="servers[serverKey]?.tone" x-text="serverName(serverKey)"></span>
       <span class="uid-mono" x-text="'UID ' + (uidPeek ? uid : mask(uid))"></span>
-      <button class="icon-btn sm" @click="peekUid()" aria-label="显示完整 UID"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#eye"></use></svg></button>
+      <button class="icon-btn sm" @click="peekUid()" aria-label="显示完整 UID"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#eye'"></use></svg></button>
       <button class="link-btn" @click="editUid()" x-text="t('me.editUid')"></button>
     </div>
     <div class="hint" x-text="t('me.creditLine', { moons: moons(5), level: t('me.creditGood'), n: completedCount })"></div>
@@ -49,17 +49,17 @@
   <!-- B站专属入口 -->
   <div class="list" x-show="accountType === 'bili'">
     <button class="list-row" @click="followFromMe()">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="'assets/icons/ui.svg#' + (followCache === true ? 'check' : 'heart')"></use></svg></span><span x-text="followCache === true ? t('follow.followed') : t('follow.row')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#' + (followCache === true ? 'check' : 'heart')"></use></svg></span><span x-text="followCache === true ? t('follow.followed') : t('follow.row')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
     </button>
     <button class="list-row" x-show="wide" @click="openQr()">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#qr"></use></svg></span><span x-text="t('me.qr')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#qr'"></use></svg></span><span x-text="t('me.qr')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
     </button>
   </div>
 
   <!-- 设置 -->
   <div class="list">
     <div class="list-row static">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#language"></use></svg></span><span x-text="t('me.lang')"></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#language'"></use></svg></span><span x-text="t('me.lang')"></span>
       <div class="seg sm">
         <template x-for="l in langs" :key="l.code">
           <button :class="{ on: lang === l.code }" @click="lang = l.code" x-text="l.label"></button>
@@ -67,15 +67,11 @@
       </div>
     </div>
     <div class="list-row static">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#sparkles"></use></svg></span><span x-text="t('me.fx')"></span>
-      <div class="seg sm">
-        <template x-for="p in ['auto', 'high', 'lite', 'off']" :key="p">
-          <button :class="{ on: fxPref === p }" @click="setFxPref(p)" x-text="p === 'auto' && fxPref === 'auto' ? t('fx.autoNow', { tier: t('fx.' + fx) }) : t('fx.' + p)"></button>
-        </template>
-      </div>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#sparkles'"></use></svg></span><span x-text="t('me.fx')"></span>
+      <button class="switch" :class="{ on: fxOn }" @click="toggleFx()" role="switch" :aria-checked="fxOn" :aria-label="t('me.fx')"><i></i></button>
     </div>
     <div class="list-row static">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#layers"></use></svg></span><span x-text="t('me.keep')"></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#layers'"></use></svg></span><span x-text="t('me.keep')"></span>
       <div class="seg sm">
         <template x-for="k in [0, 1, 2]" :key="k">
           <button :class="{ on: keep === k }" @click="keep = k" x-text="k"></button>
@@ -83,16 +79,16 @@
       </div>
     </div>
     <div class="list-row static" x-show="platform.env === 'standalone'">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bell"></use></svg></span><span x-text="t('me.notify')"></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bell'"></use></svg></span><span x-text="t('me.notify')"></span>
       <button class="switch" :class="{ on: notify }" @click="notify = !notify" role="switch" :aria-checked="notify"><i></i></button>
     </div>
   </div>
 
   <div class="list">
-    <button class="list-row" @click="exportBox()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#download"></use></svg></span><span x-text="t('me.exportBox')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span></button>
-    <button class="list-row" @click="openBoxImport()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#import"></use></svg></span><span x-text="t('me.importBox')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span></button>
+    <button class="list-row" @click="exportBox()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#download'"></use></svg></span><span x-text="t('me.exportBox')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span></button>
+    <button class="list-row" @click="openBoxImport()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#import'"></use></svg></span><span x-text="t('me.importBox')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span></button>
     <button class="list-row" @click="openImageBoxImport()"><span class="list-icon"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#cards'"></use></svg></span><span x-text="t('imageImport.entry')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span></button>
-    <button class="list-row danger" @click="clearAll()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#trash"></use></svg></span><span x-text="t('me.clear')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span></button>
+    <button class="list-row danger" @click="clearAll()"><span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#trash'"></use></svg></span><span x-text="t('me.clear')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span></button>
   </div>
-  <p class="hint center foot" x-text="t('me.help')"></p>
+  <p class="hint center foot"><span x-text="t('me.help')"></span><br><a class="brand-link" :href="t('app.url')" target="_blank" rel="noopener noreferrer" x-text="t('app.project')"></a></p>
 </section>

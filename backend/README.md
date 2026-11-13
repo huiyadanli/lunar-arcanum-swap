@@ -65,11 +65,13 @@ npm run start:backend
 
 自动确认仍按首次确认时间加 10 分钟触发，定时任务最多有约 1 分钟调度延迟。维护函数每次从 Event 上下文重新读取临时 COS 凭据；HTTP API 函数只使用现有服务端 API Key 和 HMAC，未新增长期密钥。定时入口验证平台注入的 `TRIGGER_SRC`，其他维护操作必须通过 HMAC 校验。
 
-2026-11-14 已应用 `20261114040000_idle_maintenance` 并更新两个云函数。发布顺序为数据库迁移、维护函数、API 函数，随后运行 `node scripts/check-maintenance-cloud.mjs --run` 重建已有数据的到期计划，再用 `node scripts/check-maintenance-cloud.mjs` 检查索引；后者不访问数据库。修改维护资源配置后需重新构建、部署两个函数。紧急回退可将资源配置中的 `maintenanceEnabled` 改为 `false` 并重新部署两个函数，恢复每分钟维护；保留 SQL 迁移即可。
+空闲维护规则已包含在统一初始化 `20261114050000_init_swap`，两个云函数已部署。新环境的发布顺序为初始化数据库、维护函数、API 函数，随后运行 `node scripts/check-maintenance-cloud.mjs --run` 同步到期计划，再用 `node scripts/check-maintenance-cloud.mjs` 检查索引；后者不访问数据库。修改维护资源配置后需重新构建、部署两个函数。紧急回退可将资源配置中的 `maintenanceEnabled` 改为 `false` 并重新部署两个函数，恢复每分钟维护；保留数据库定义即可。
 
 ## 数据库与构建
 
-数据库环境：`lunar-arcanum-swap-d9cl8ad90b4e4`，国内站上海地域，PostgreSQL 模式。迁移按文件名顺序保存在 `cloudbase/migrations/`，已经应用的文件保持不变，后续修改新增版本。
+数据库环境：`lunar-arcanum-swap-d9cl8ad90b4e4`，国内站上海地域，PostgreSQL 模式。项目尚未发布，原有 8 个迁移已合并为唯一初始化文件 `cloudbase/migrations/20261114050000_init_swap.sql`，空库直接创建最终表结构、索引、函数、触发器和权限，不保留旧数据回填或历史升级兼容路径。初始化文件只负责创建，不包含清空数据库的操作。
+
+2026-11-14 已按未发布环境重置生产业务数据库，业务账号、玩家资料、换牌需求、匹配、反馈、屏蔽、幂等记录、限流及信用流水均为空，远端迁移记录仅保留统一初始化版本。CloudBase 的认证配置、系统账号、密钥及存储配置保留；维护到期索引已同步为空。此次合并没有修改业务 RPC 的接口，无需重新部署现有云函数。
 
 业务表位于 `public`，均启用 RLS 并撤回客户端直接访问权限；业务 RPC 仅授予 `service_role`。`swap_private` 中存放内部事务辅助函数、限流记录和信用流水。信用流水用于申诉后重新计算处罚，客户端不能读取。
 
@@ -82,9 +84,7 @@ npm run package:backend
 
 ## CloudBase 发布
 
-1. 已应用 `20261113060000_init_swap`、`20261113064000_transport_errors`、`20261113065000_history_cursor`、`20261114020000_close_confirmed_listing`、`20261114021000_success_resets_quota`、`20261114030000_ten_minute_confirmation`、`20261114031000_auto_completion_resets_quota` 和 `20261114040000_idle_maintenance` 八个迁移；匿名登录和自定义登录均已启用并通过真实登录验证。
-   `20261114030000_ten_minute_confirmation` 于北京时间 2026-11-14 02:40 应用成功，已核对远端迁移历史及 10 分钟、主动 +6 / 自动 +2 的函数定义；不需要重新部署云函数。迁移同时将仍在等待确认的记录按首次确认时间调整期限，已完成记录的历史积分不变。
-   `20261114031000_auto_completion_resets_quota` 于北京时间 2026-11-14 03:06 应用成功，自动确认成功后同样恢复双方各 1 次额度；已核对远端迁移历史及触发器定义。该迁移只调整后续成功结算的触发条件，不追溯刷新旧交换的次数。
+1. 空库应用唯一初始化 `20261114050000_init_swap`。生产环境已经应用，无需重复执行。该定义直接包含微秒历史游标、安全业务错误、确认后结束本轮需求、10 分钟自动确认、主动 +6 / 自动 +2、成功恢复双方各 1 次额度和按需维护。匿名登录和自定义登录均已启用并通过真实登录验证。
 2. 使用 CloudBase MCP `queryFunctions(action="getFunctionUploadUrl")` 获取上传地址，PUT 对应 ZIP，再将返回的 COS 三元组原样交给 `manageFunctions(action="createFunction", code=...)`。现有函数更新使用 `updateFunctionCode`。每次上传地址临时获取，不保存签名 URL。
 3. `swap-api` 使用 HTTP 类型、`Nodejs20.19`、30 秒超时，注入运行配置；`swap-maintenance` 使用 Event 类型、相同运行时、`index.main` 入口和 60 秒超时，只需要环境 ID、服务端 API Key 和 HMAC 密钥。
 4. 为维护函数创建 `timer` 触发器，7 段 cron 为 `0 * * * * * *`，每分钟检查 COS 到期索引，只有任务到期才执行维护 RPC。维护 RPC 可以重复执行，避免重试时重复结算。
@@ -122,6 +122,6 @@ node scripts/check-backend-cloud.mjs --url https://实际网关域名/api/v1
 
 常规测试使用 PGlite 执行实际 PostgreSQL 迁移和事务，覆盖账号隔离、重复 UID、额度、占用、部分完成、申诉冲正、超时、幂等及 HTTP 输入边界。云端联调会创建独立测试身份，验证真实匿名 / 自定义登录、并发匹配和数据库权限，结束后撤回测试身份的等待需求；不要将该命令作为每次前端构建的一部分。
 
-本地全量 119 项测试通过，包含数据库事务、轻量状态合并、空闲轮询、信号持久化、并发维护与失败重试。两个独立会话通过实际前端 SDK 和 API 适配器完成了线上登录、UID 保存、发布、版本编辑、匹配、查看 UID 与双方确认结算；测试后撤回等待需求。线上已观察到定时触发器清理唤醒信号，正常维护检查返回 `skipped: true`、`databaseAccessed: false`。内置浏览器连接不可用，未完成页面点击和 B站真机验证。
+统一初始化已通过与原 8 个迁移的 PostgreSQL 目录对比，函数、触发器、表结构、索引及权限一致；当前本地全量 62 项测试通过，包含空库与新账号初始状态、数据库事务、轻量状态合并、空闲轮询、信号持久化、并发维护与失败重试。重置后复核业务表为空、远端仅有一条初始化迁移、维护任务数量为 0。此前两个独立会话已通过实际前端 SDK 和 API 适配器完成线上登录、UID 保存、发布、版本编辑、匹配、查看 UID 与双方确认结算；本次重置后的验证不运行会创建测试数据的云端联调。内置浏览器此前连接不可用，未完成页面点击和 B站真机验证。
 
 服务端 API Key 名为 `lunar-swap-backend`，由环境维护者负责轮换或撤销。轮换后需同时更新 API 与维护函数。HMAC 密钥关联现有账号凭据哈希，不能直接替换；需要另做兼容迁移。自定义登录私钥轮换后仅更新 API 函数，原文不进入日志或响应。

@@ -39,8 +39,24 @@ export function createOnlineApi({ apiBase, storage, fetcher = fetch, createAuth 
   let listing = null;
   let stats = { waiting: 0 };
   let lastState;
+  // 前台请求计数：UI 据此显示等待提示；轮询等后台请求不计入，避免界面无故闪烁。
+  let pending = 0;
+  const pendingListeners = new Set();
 
-  async function request(path, { method = 'GET', body, authenticated = true } = {}) {
+  async function track(task, background = false) {
+    if (background) return task();
+    pending++;
+    for (const listener of pendingListeners) listener(pending);
+    try { return await task(); }
+    finally {
+      pending--;
+      for (const listener of pendingListeners) listener(pending);
+    }
+  }
+
+  const request = (path, options = {}) => track(() => send(path, options), options.background);
+
+  async function send(path, { method = 'GET', body, authenticated = true } = {}) {
     const headers = { 'X-Device-Id': deviceId };
     if (body !== undefined) headers['Content-Type'] = 'application/json';
     if (method !== 'GET') headers['Idempotency-Key'] = uuid();
@@ -77,7 +93,7 @@ export function createOnlineApi({ apiBase, storage, fetcher = fetch, createAuth 
   }
 
   async function init() {
-    if (!initializing) initializing = (async () => {
+    if (!initializing) initializing = track(async () => {
       config = await request('/config', { authenticated: false });
       if (!config.cloudbase?.envId || !config.cloudbase?.publishableKey) throw new OnlineApiError('AUTH_NOT_CONFIGURED');
       ({ auth } = await createAuth(config.cloudbase));
@@ -86,16 +102,20 @@ export function createOnlineApi({ apiBase, storage, fetcher = fetch, createAuth 
         if (event === 'SIGNED_OUT') { listing = null; stats = { waiting: 0 }; lastState = undefined; }
       });
       return config;
-    })().catch(error => { initializing = undefined; throw error; });
+    }).catch(error => { initializing = undefined; throw error; });
     return initializing;
   }
 
   const api = {
     init,
+    subscribePending(listener) {
+      pendingListeners.add(listener);
+      return () => pendingListeners.delete(listener);
+    },
     async createSession(accountType = 'anon', credential) {
       await init();
       if (signingIn) return signingIn;
-      signingIn = (async () => {
+      signingIn = track(async () => {
         let newCredential;
         if (accountType === 'bili') {
           const session = await request('/session', { method: 'POST', authenticated: false,
@@ -110,15 +130,15 @@ export function createOnlineApi({ apiBase, storage, fetcher = fetch, createAuth 
         const realSession = checked(await auth.getSession())?.session;
         if (!realSession?.access_token) throw new OnlineApiError('UNAUTHENTICATED');
         return { accountType, ...(newCredential ? { credential: newCredential } : {}) };
-      })();
+      });
       try { return await signingIn; } finally { signingIn = undefined; }
     },
     updateProfile: data => request('/me', { method: 'PUT', body: data }),
-    async getState(_server, { light = false } = {}) {
-      let received = await request(light && lastState ? '/state?light=1' : '/state');
+    async getState(_server, { light = false, background = false } = {}) {
+      let received = await request(light && lastState ? '/state?light=1' : '/state', { background });
       if (received.history === null && lastState?.matches.some(old => !received.matches.some(m => m.id === old.id))) {
         // 自动结算或另一设备确认后，补拉最终记录，匹配详情才能立即显示已完成。
-        received = await request('/state');
+        received = await request('/state', { background });
       }
       const complete = { ...received, history: received.history ?? lastState?.history ?? [],
         stats: received.stats ?? lastState?.stats ?? { waiting: 0 },

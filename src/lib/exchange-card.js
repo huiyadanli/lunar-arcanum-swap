@@ -295,7 +295,7 @@ export async function renderExchangeCard({ give, want, displayName, server, uid,
   const footFill = ctx.createLinearGradient(M, 0, R, 0);
   footFill.addColorStop(0, '#ffffff05'); footFill.addColorStop(1, '#d9bd8012');
   panel(ctx, M, footerY, CW, footerH, 20, footFill, '#d9bd803d');
-  const label = bili ? (en ? 'BILIBILI TOY' : 'B站 Toy · 月谕圣牌交换站') : (en ? 'INDEPENDENT SITE' : 'BetterGI·月谕圣牌交换站');
+  const label = bili ? (en ? 'BILIBILI TOY' : 'B站 Toy · 更好的原神 月谕圣牌交换站') : (en ? 'INDEPENDENT SITE' : '更好的原神 · 月谕圣牌交换站');
   star(ctx, M + 34, footerY + 48, 7, GOLD);
   fitText(ctx, label, M + 52, footerY + 56, 21, urlWidth - 22, GOLD, 600);
   fitText(ctx, en ? 'Find your missing piece.' : '缺的那张，总有人多一张。', M + 28, footerY + 108, en ? 30 : 32, urlWidth, INK, 600, en ? SERIF : SANS);

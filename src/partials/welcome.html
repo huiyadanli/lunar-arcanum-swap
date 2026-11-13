@@ -30,25 +30,12 @@
       </div>
       <div class="showcase-caption" aria-live="polite" aria-atomic="true">
         <span class="showcase-roman" x-text="card(fanCards[activeIndex]).roman"></span>
-        <b x-text="cardName(fanCards[activeIndex])"></b>
-        <span class="showcase-edition" x-text="t('welcome.collection')"></span>
+        <b>BetterGI</b>
       </div>
-      <div class="showcase-controls">
-        <button type="button" class="showcase-arrow" @click="step(-1)" :aria-label="t('welcome.previous')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
-        <div class="showcase-dots" role="group" :aria-label="t('welcome.chooseCard')">
-          <template x-for="(id, i) in fanCards" :key="id">
-            <button type="button" :class="{ on: activeIndex === i }" :aria-label="t('welcome.viewCard', { card: cardName(id) })" :aria-pressed="activeIndex === i" @click="select(i)"><span></span></button>
-          </template>
-        </div>
-        <button type="button" class="showcase-arrow" @click="step(1)" :aria-label="t('welcome.next')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#chevron-right"></use></svg></button>
-      </div>
-      <p class="showcase-hint" x-text="t('welcome.interact')"></p>
     </div>
 
     <div class="welcome-copy">
-    <div class="welcome-eyebrow"><span></span><span x-text="t('welcome.eyebrow')"></span></div>
-    <h1 class="welcome-title" x-text="t('app.name')"></h1>
-    <p class="welcome-tagline" x-text="t('app.tagline')"></p>
+    <h1 class="welcome-title" x-text="t('app.short')"></h1>
     <p class="welcome-description" x-text="t('welcome.description')"></p>
 
     <ol class="welcome-steps">
@@ -58,16 +45,15 @@
     </ol>
 
     <button class="btn btn-primary btn-block btn-shine" @click="startOnboarding()">
-      <span x-text="t('welcome.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
+      <span x-text="t('welcome.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#arrow-right'"></use></svg>
     </button>
 
     <button class="link-btn" x-show="accountType === 'bili' && !profile && !profileDeclined" @click="useBiliProfile()">
-      <span class="bili-dot"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bilibili"></use></svg></span><span x-text="t('welcome.useBili')"></span>
+      <span class="bili-dot"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bilibili'"></use></svg></span><span x-text="t('welcome.useBili')"></span>
     </button>
     <p class="welcome-note" x-show="accountType === 'bili' && profile">
-      <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#check"></use></svg> <span x-text="profile?.nickname"></span>
+      <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#check'"></use></svg> <span x-text="profile?.nickname"></span>
     </p>
-    <p class="welcome-note" x-show="accountType === 'anon'" x-text="t('welcome.anonHint')"></p>
 
     <div class="lang-switch">
       <template x-for="l in langs" :key="l.code">
@@ -80,7 +66,7 @@
   <!-- 1 · UID -->
   <div class="onboard" x-show="onboardStep === 1">
     <div class="onboard-top">
-      <button class="icon-btn" @click="onboardStep = 0" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+      <button class="icon-btn" @click="onboardStep = 0" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-left'"></use></svg></button>
       <div class="moon-steps" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
       <span class="onboard-step" x-text="t('onboard.step', { n: 1 })"></span>
     </div>
@@ -100,27 +86,27 @@
       <p class="hint is-bad" x-show="uidState.state === 'invalid'" x-text="t('onboard.uidInvalid')"></p>
       <p class="hint is-warn" x-show="uidState.state === 'unknown'" x-text="t('onboard.uidUnknown')"></p>
     </div>
-    <p class="privacy"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('onboard.privacy')"></span></p>
-    <button class="btn btn-primary btn-block" :disabled="!uidReady" @click="confirmUid()" x-text="t('common.next')"></button>
+    <button class="btn btn-primary btn-block" :aria-disabled="!uidReady" :aria-busy="busy" @click="confirmUid()" x-text="t('common.next')"></button>
+    <p class="privacy"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#lock'"></use></svg> <span x-text="t('onboard.privacy')"></span></p>
   </div>
 
   <!-- 2 · 开始方式 -->
   <div class="onboard" x-show="onboardStep === 2">
     <div class="onboard-top">
-      <button class="icon-btn" @click="onboardStep = 1" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+      <button class="icon-btn" @click="onboardStep = 1" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-left'"></use></svg></button>
       <div class="moon-steps" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i></div>
       <span class="onboard-step" x-text="t('onboard.step', { n: 2 })"></span>
     </div>
     <h2 class="onboard-title" x-text="t('onboard.modeTitle')"></h2>
     <button class="mode-card" @click="chooseMode('quick')">
-      <span class="mode-icon"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bolt"></use></svg></span>
+      <span class="mode-icon"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bolt'"></use></svg></span>
       <span><b x-text="t('onboard.quickTitle')"></b><small x-text="t('onboard.quickDesc')"></small></span>
-      <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+      <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
     </button>
     <button class="mode-card" @click="chooseMode('full')">
-      <span class="mode-icon"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cards"></use></svg></span>
+      <span class="mode-icon"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#cards'"></use></svg></span>
       <span><b x-text="t('onboard.fullTitle')"></b><small x-text="t('onboard.fullDesc')"></small></span>
-      <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+      <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
     </button>
   </div>
 </section>

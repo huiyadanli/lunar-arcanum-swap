@@ -9,12 +9,12 @@
     <template x-if="sheetView === 'card'">
       <div class="card-sheet" :style="`--card-color:${card(sheetData.id).color}`" @touchstart.passive="touchStart($event)" @touchend="touchEnd($event)">
         <div class="card-sheet-top">
-          <button class="icon-btn" @click="sheetStep(-1)" aria-label="上一张"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+          <button class="icon-btn" @click="sheetStep(-1)" aria-label="上一张"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-left'"></use></svg></button>
           <div class="card-large" x-tilt :style="`--mask:url(${new URL(card(sheetData.id).img.m, location.href).href})`">
             <img :src="card(sheetData.id).img.m" :srcset="`${card(sheetData.id).img.m} 360w, ${card(sheetData.id).img.l} 684w`" sizes="180px" alt="">
             <div class="sheen" aria-hidden="true"></div>
           </div>
-          <button class="icon-btn" @click="sheetStep(1)" aria-label="下一张"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></button>
+          <button class="icon-btn" @click="sheetStep(1)" aria-label="下一张"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></button>
         </div>
         <div class="card-sheet-name">
           <span class="roman" x-text="card(sheetData.id).roman"></span>
@@ -23,18 +23,18 @@
         </div>
         <div class="stepper" data-burst>
           <span x-text="t('box.hold')"></span>
-          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) - 1))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="-1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#minus"></use></svg></button>
+          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) - 1))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="-1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#minus'"></use></svg></button>
           <b class="roll" x-text="count(sheetData.id)" x-effect="count(sheetData.id); $el.classList.remove('rolling'); void $el.offsetWidth; $el.classList.add('rolling')"></b>
-          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) + 1, $event))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="+1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#plus"></use></svg></button>
+          <button @pointerdown="holdStart(() => setCount(sheetData.id, count(sheetData.id) + 1, $event))" @pointerup="holdStop()" @pointerleave="holdStop()" aria-label="+1"><svg class="icon icon-lg" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#plus'"></use></svg></button>
         </div>
         <div class="card-sheet-meta">
           <span x-text="t('box.keep') + ' ' + keep"></span>
           <span class="gold" x-text="t('box.spareN', { n: spare(sheetData.id) })"></span>
-          <span x-show="lockedGive(sheetData.id) || lockedGet(sheetData.id)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
+          <span x-show="lockedGive(sheetData.id) || lockedGet(sheetData.id)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#lock'"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
         </div>
         <label class="check-row" :class="{ disabled: count(sheetData.id) > 0 }">
           <input type="checkbox" :checked="wanted(sheetData.id)" :disabled="count(sheetData.id) > 0" @change="toggleWant(sheetData.id)">
-          <span><svg class="icon icon-sm icon-gold" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg> <span x-text="t('box.wantThis')"></span></span>
+          <span><svg class="icon icon-sm icon-gold" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#star'"></use></svg> <span x-text="t('box.wantThis')"></span></span>
         </label>
         <p class="hint center" x-text="t('box.swipeHint')"></p>
         <button class="btn btn-primary btn-block" @click="sheet = null" x-text="t('common.done')"></button>
@@ -51,7 +51,7 @@
               <span class="chip-wrap"><img class="chip-card" :src="card(id).img.s" alt=""><i x-show="q > 1" x-text="'×' + q"></i></span>
             </template>
           </div>
-          <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+          <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg></span>
           <div class="chips-row">
             <template x-for="id in wantList" :key="'pw' + id"><img class="chip-card want" :src="card(id).img.s" alt=""></template>
           </div>
@@ -72,7 +72,7 @@
         </div>
         <p class="hint" id="trade-time-hint" x-text="t('publish.noteHint')"></p>
         <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: timeLeft(resetAt) })"></p>
-        <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft" @click="doPublish()"
+        <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft" :aria-busy="busy" @click="doPublish()"
                 x-text="t('publish.go')"></button>
       </div>
     </template>
@@ -89,7 +89,7 @@
         </div>
         <h3 class="sheet-title center" x-text="t('follow.title')"></h3>
         <p class="hint center" x-text="t('follow.desc')"></p>
-        <button class="btn btn-primary btn-block btn-shine" @click="goFollow()"><span x-text="t('follow.go')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg></button>
+        <button class="btn btn-primary btn-block btn-shine" @click="goFollow()"><span x-text="t('follow.go')"></span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#arrow-right'"></use></svg></button>
         <button class="btn btn-ghost btn-block" @click="recheckFollow()" x-text="t('follow.already')"></button>
       </div>
     </template>
@@ -101,10 +101,10 @@
         <template x-for="(p, i) in (m?.pairs || [])" :key="i">
           <label class="check-row">
             <input type="checkbox" :checked="sheetData.sel.includes(i)" @change="toggleSel(i)">
-            <span class="pair-label"><span x-text="cardName(p.give)"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><span x-text="cardName(p.get)"></span></span>
+            <span class="pair-label"><span x-text="cardName(p.give)"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg><span x-text="cardName(p.get)"></span></span>
           </label>
         </template>
-        <button class="btn btn-primary btn-block" :disabled="!sheetData.sel.length" @click="confirmDone(sheetData.matchId, sheetData.sel)" x-text="t('match.confirmDone')"></button>
+        <button class="btn btn-primary btn-block" :disabled="!sheetData.sel.length || busy" :aria-busy="busy" @click="confirmDone(sheetData.matchId, sheetData.sel)" x-text="t('match.confirmDone')"></button>
       </div>
     </template>
 
@@ -119,7 +119,7 @@
           </label>
         </template>
         <textarea x-show="sheetData.reason === 'other'" rows="2" maxlength="200" :placeholder="t('match.otherPlaceholder')" x-model="sheetData.note"></textarea>
-        <button class="btn btn-primary btn-block" :disabled="!sheetData.reason" @click="submitProblem()" x-text="t('match.submit')"></button>
+        <button class="btn btn-primary btn-block" :disabled="!sheetData.reason || busy" :aria-busy="busy" @click="submitProblem()" x-text="t('match.submit')"></button>
       </div>
     </template>
 
@@ -144,8 +144,8 @@
           <p class="hint is-bad" x-show="uidState.state === 'invalid'" x-text="t('onboard.uidInvalid')"></p>
           <p class="hint is-warn" x-show="uidState.state === 'unknown'" x-text="t('onboard.uidUnknown')"></p>
         </div>
-        <p class="privacy"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('onboard.privacy')"></span></p>
-        <button class="btn btn-primary btn-block" :disabled="!uidReady" @click="listing && withdraw(); confirmUid(); refresh()" x-text="t('common.confirm')"></button>
+        <p class="privacy"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#lock'"></use></svg> <span x-text="t('onboard.privacy')"></span></p>
+        <button class="btn btn-primary btn-block" :disabled="!uidReady || busy" :aria-busy="busy" @click="listing && withdraw(); confirmUid(); refresh()" x-text="t('common.confirm')"></button>
       </div>
     </template>
 
@@ -332,7 +332,7 @@
             </template>
           </div>
         </div>
-        <div class="debug-row"><span>特效档位</span><b x-text="fx + (fxPref === 'auto' ? '（自动）' : '')"></b></div>
+        <div class="debug-row"><span>特效档位</span><b x-text="fx + (fxOn ? '（自动）' : '')"></b></div>
         <div class="debug-btns">
           <button class="btn btn-ghost sm" @click="devIncoming()">模拟：有人匹配到我</button>
           <button class="btn btn-ghost sm" @click="devPartner('reveal')">模拟：对方开始交换</button>
@@ -358,22 +358,23 @@
       <div class="namecard-sheet">
         <div class="namecard-heading">
           <div><small>LUNAR KEEPSAKE</small><h3 class="sheet-title" x-text="t('namecard.title')"></h3></div>
-          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#close"></use></svg></button>
+          <button class="icon-btn" @click="sheet = null" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#close'"></use></svg></button>
         </div>
+        <div class="namecard-body">
         <div class="namecard-layout">
           <div class="namecard-preview" :aria-busy="namecard.generating">
             <template x-if="namecard.image">
               <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
             </template>
             <div class="namecard-placeholder" x-show="!namecard.image" role="status">
-              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="'assets/icons/ui.svg#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
+              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="imageImportIcons + '#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
               <p x-text="namecard.error || t('namecard.generating')"></p>
               <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
             </div>
           </div>
           <div class="namecard-options">
             <p class="namecard-intro" x-text="t('namecard.intro')"></p>
-            <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
+            <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#check'"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
             <label class="check-row namecard-uid">
               <input type="checkbox" x-model="namecard.includeUid" @change="generateNamecard()" :disabled="namecard.generating || namecard.saving">
               <span><b x-text="t('namecard.showUid')"></b><small x-text="t('namecard.uidHint')"></small></span>
@@ -382,16 +383,19 @@
               <div class="namecard-destination" :class="{ 'is-bili': namecard.site.kind === 'bili' }">
                 <template x-if="namecard.site.kind === 'bili'">
                   <div>
-                    <b><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#bilibili"></use></svg><span x-text="t('namecard.biliDestination')"></span></b>
+                    <b><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#bilibili'"></use></svg><span x-text="t('namecard.biliDestination')"></span></b>
                     <p x-text="t('namecard.biliHint')"></p>
                   </div>
                 </template>
                 <a :href="namecard.site.url" target="_blank" rel="noopener noreferrer" x-text="namecard.site.url"></a>
               </div>
             </template>
-            <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use href="assets/icons/ui.svg#download"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
-            <p class="hint center" x-show="namecard.image" x-text="t('namecard.saveHint', { size: Math.ceil((namecard.image?.bytes || 0) / 1024) })"></p>
           </div>
+        </div>
+        </div>
+        <div class="namecard-actions">
+          <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#download'"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
+          <p class="hint center" x-show="namecard.image" x-text="t('namecard.saveHint', { size: Math.ceil((namecard.image?.bytes || 0) / 1024) })"></p>
         </div>
       </div>
     </div>

@@ -47,7 +47,7 @@
       <p class="hint center" x-text="t('trade.poolStat', { server: serverName(serverKey), n: poolStats.waiting })"></p>
       <p class="resonance-note" x-text="t('trade.signal')"></p>
       <ol class="resonance-steps">
-        <li class="is-complete"><svg class="icon icon-xs" aria-hidden="true"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('trade.requestReady')"></span></li>
+        <li class="is-complete"><svg class="icon icon-xs" aria-hidden="true"><use :href="imageImportIcons + '#check'"></use></svg><span x-text="t('trade.requestReady')"></span></li>
         <li class="is-current" aria-current="step"><span class="signal-dot" aria-hidden="true"></span><span x-text="t('trade.finding')"></span></li>
         <li><span class="step-node" aria-hidden="true"></span><span x-text="t('trade.connected')"></span></li>
       </ol>
@@ -66,24 +66,24 @@
             <span class="chip-wrap"><img class="chip-card" :src="card(id).img.s" alt=""><i x-show="q > 1" x-text="'×' + q"></i></span>
           </template>
         </div>
-        <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+        <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg></span>
         <div class="chips-row">
           <template x-for="id in listing.want" :key="'lw' + id">
             <img class="chip-card want" :src="card(id).img.s" alt="">
           </template>
         </div>
       </div>
-      <p class="hint" x-show="noteText(listing.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> <span x-text="noteText(listing.note)"></span></p>
+      <p class="hint" x-show="noteText(listing.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#message'"></use></svg> <span x-text="noteText(listing.note)"></span></p>
       <div class="row-btns">
-        <button class="btn btn-ghost sm namecard-action" x-show="hasWaitingListing" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg><span x-text="t('namecard.entry')"></span></button>
+        <button class="btn btn-ghost sm namecard-action" x-show="hasWaitingListing" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#cards'"></use></svg><span x-text="t('namecard.entry')"></span></button>
         <button class="btn btn-ghost sm" @click="go('box')" x-text="t('trade.edit')"></button>
-        <button class="btn btn-ghost sm" @click="withdraw()" x-text="t('trade.withdraw')"></button>
+        <button class="btn btn-ghost sm" :disabled="busy" @click="withdraw()" x-text="t('trade.withdraw')"></button>
         <button class="btn btn-ghost sm" :disabled="!hasWaitingListing || !quotaLeft || busy" @click="rematch()"
                 x-text="quotaLeft ? t('trade.rematchLeft', { n: quotaLeft }) : t('trade.rematch') + ' · ' + t('trade.resetIn', { time: timeLeft(resetAt) })"></button>
       </div>
       <!-- 通知：独立站 Web Push；Toy 内提示回访 + 邀请 -->
       <div class="notify-row" x-show="platform.env === 'standalone'">
-        <span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#bell"></use></svg> <span x-text="t('trade.notify')"></span></span>
+        <span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bell'"></use></svg> <span x-text="t('trade.notify')"></span></span>
         <button class="switch" :class="{ on: notify }" @click="notify = !notify" role="switch" :aria-checked="notify"><i></i></button>
       </div>
       <div class="notify-row" x-show="platform.env !== 'standalone'">
@@ -101,7 +101,7 @@
       <button class="match-row" @click="go('trade/' + m.id)" :class="{ fresh: !m.myConfirm && !m.revealed }">
         <div class="match-pairs">
           <template x-for="(p, i) in m.pairs" :key="i">
-            <span class="pair-mini"><img :src="card(p.give).img.s" alt=""><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><img :src="card(p.get).img.s" alt=""></span>
+            <span class="pair-mini"><img :src="card(p.give).img.s" alt=""><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg><img :src="card(p.get).img.s" alt=""></span>
           </template>
         </div>
         <div class="match-meta">
@@ -109,7 +109,7 @@
           <span class="pill" :class="'st-' + matchStatus(m)" x-text="t('status.' + matchStatus(m))"></span>
           <span class="hint" x-show="m.status === 'confirming' && m.myConfirm" x-text="t('trade.autoConfirmHint')"></span>
         </div>
-        <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-right"></use></svg></span>
+        <span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
       </button>
     </template>
   </div>

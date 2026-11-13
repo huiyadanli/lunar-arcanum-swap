@@ -281,22 +281,20 @@ describe('PostgreSQL 真实事务与业务约束', { concurrency: false }, () =>
     }
   });
 
-  it('升级迁移按已有首次确认时间调整期限，历史已结算的奖励保持不变', async () => {
-    const finished = await matchTwo();
-    await confirm('alice', finished, { result: 'completed' });
-    await confirm('bob', finished, { result: 'completed' });
-    await scalar("SELECT swap_private.settle($1,'completed',ARRAY[0],2,2,false,false,1,1)", [finished]);
-    await bind('carol'); await bind('dave');
-    await publish('carol', { 18: 1 }, [2]);
-    const waiting = (await publish('dave', { 2: 1 }, [18])).matches[0].id;
-    await confirm('carol', waiting, { result: 'completed' });
-    const at = (await state('carol')).matches[0].myConfirm.at;
-    await db.query("UPDATE public.matches SET expires_at=now()+interval '48 hours' WHERE id=$1", [waiting]);
-    await db.exec(await readFile(new URL('../cloudbase/migrations/20261114030000_ten_minute_confirmation.sql', import.meta.url), 'utf8'));
-    assert.ok(Math.abs((await state('carol')).matches[0].expiresAt - at - 10 * 60e3) <= 1);
-    assert.equal((await scalar("SELECT credit FROM public.players WHERE account_id='anon:alice'")).credit, 102);
-    // 本用例回放旧迁移后恢复当前实现，避免影响后续业务用例。
-    await db.exec(await readFile(new URL('../cloudbase/migrations/20261114040000_idle_maintenance.sql', import.meta.url), 'utf8'));
+  it('统一初始化不含业务种子，新账号从空资料、满额度和初始信用开始', async () => {
+    // 本用例直接验证当前初始化结果，避免回放旧迁移影响后续业务用例。
+    assert.deepEqual((await scalar('SELECT public.swap_maintenance() AS data')).data,
+      { processed: 0, nextDueAt: null });
+    assert.equal((await scalar('SELECT count(*)::int AS count FROM public.accounts')).count, 0);
+    const initial = await state('fresh');
+    assert.equal(initial.me.uid, null);
+    assert.equal(initial.me.completedCount, 0);
+    assert.equal(initial.me.cooldownUntil, null);
+    assert.equal(initial.listing, null);
+    assert.deepEqual(initial.matches, []);
+    assert.deepEqual(initial.history, []);
+    assert.equal(initial.quota.left, 1);
+    assert.equal((await scalar("SELECT credit FROM public.players WHERE account_id='anon:fresh'")).credit, 100);
   });
 
   it('自动完成恢复双方次数，重复维护不重复奖励；主动加 6 分、自动加 2 分且 UID 隐藏', async () => {

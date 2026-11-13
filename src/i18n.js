@@ -2,7 +2,7 @@
 import { TRADE_NOTE_LABELS } from './lib/trade-notes.js';
 
 const zh = {
-  app: { name: '月谕圣牌交换站', tagline: '缺的那张，总有人多一张' },
+  app: { name: '更好的原神 · 月谕圣牌交换站', short: '月谕圣牌交换站', tagline: '缺的那张，总有人多一张', brand: '更好的原神 · BetterGI', project: '本站隶属于 BetterGI 项目', url: 'https://github.com/babalae/better-genshin-impact' },
   imageImport: {
     entry: '从图片导入 Box', entryHint: '米游社导出图 · 在本机识别', title: '从米游社图片导入',
     description: '选择你的圣牌图片，在本机识别数量。图片不会上传；0、1、2张自动识别，其他数量可手动填写。',
@@ -33,7 +33,7 @@ const zh = {
   },
   common: {
     next: '下一步', back: '返回', done: '完成', cancel: '取消', confirm: '确认', copy: '复制',
-    copied: '已复制', close: '关闭', retry: '重试', undo: '撤销', loading: '加载中…', all: '全部',
+    copied: '已复制', close: '关闭', retry: '重试', undo: '撤销', loading: '加载中…', requesting: '正在连接服务…', requestingSlow: '服务响应较慢，仍在处理，请稍候，不必重复操作', all: '全部', requestFailed: '请求失败，请稍后重试',
   },
   nav: { box: '我的Box', trade: '交换', me: '我的' },
   welcome: {
@@ -150,7 +150,7 @@ const zh = {
     editUid: '修改', uidLocked: '有已发布的换牌需求，修改 UID 会撤回该需求', loginHint: '登录 B站 后可跨设备同步 Box',
     qrDesc: '用 B站 App 扫码，在手机上继续；登录同一账号后数据自动同步',
   },
-  fx: { auto: '自动', high: '华丽', lite: '流畅', off: '关闭', autoNow: '自动（{tier}）', downgraded: '已切换到流畅模式' },
+  fx: { downgraded: '已切换到流畅模式' },
   platform: {
     profileTitle: '获取你的昵称、头像和当前 Toy 内用户标识',
     profileBody: '你的 B站昵称、头像和仅用于当前 Toy 的用户标识，将用于当前 Toy 内展示和关联数据；不会向 Toy 提供你的 UID，也不能用于跨 Toy 识别。',
@@ -162,7 +162,7 @@ const zh = {
 };
 
 const en = {
-  app: { name: 'Lunar Arcanum Swap', tagline: 'The card you need is someone\'s spare' },
+  app: { name: 'BetterGI · Lunar Arcanum Swap', short: 'Lunar Arcanum Swap', tagline: 'The card you need is someone\'s spare', brand: 'BetterGI · Better Genshin Impact', project: 'A BetterGI project', url: 'https://github.com/babalae/better-genshin-impact' },
   imageImport: {
     entry: 'Import Box from an image', entryHint: 'HoYoLAB export · processed on this device', title: 'Import a card image',
     description: 'Choose your card image. Recognition stays on this device and the image is never uploaded. Counts of 0, 1 and 2 are automatic; edit other quantities manually.',
@@ -193,7 +193,7 @@ const en = {
   },
   common: {
     next: 'Next', back: 'Back', done: 'Done', cancel: 'Cancel', confirm: 'Confirm', copy: 'Copy',
-    copied: 'Copied', close: 'Close', retry: 'Retry', undo: 'Undo', loading: 'Loading…', all: 'All',
+    copied: 'Copied', close: 'Close', retry: 'Retry', undo: 'Undo', loading: 'Loading…', requesting: 'Connecting to the service…', requestingSlow: 'The service is slow to respond. Still working on it, so please wait and avoid repeating the action.', all: 'All', requestFailed: 'Request failed, please try again',
   },
   nav: { box: 'My Box', trade: 'Trade', me: 'Me' },
   welcome: {
@@ -310,7 +310,7 @@ const en = {
     editUid: 'Edit', uidLocked: 'Changing UID will withdraw your trade request', loginHint: 'Log in to Bilibili to sync your Box',
     qrDesc: 'Scan with the Bilibili app to continue on your phone; data syncs with the same account',
   },
-  fx: { auto: 'Auto', high: 'Rich', lite: 'Smooth', off: 'Off', autoNow: 'Auto ({tier})', downgraded: 'Switched to Smooth mode' },
+  fx: { downgraded: 'Switched to Smooth mode' },
   platform: {
     profileTitle: 'Share your nickname, avatar and Toy user ID',
     profileBody: 'Your Bilibili nickname, avatar and a Toy-only user ID will be used for display and data within this Toy. Your UID is never shared and it can\'t be used across Toys.',

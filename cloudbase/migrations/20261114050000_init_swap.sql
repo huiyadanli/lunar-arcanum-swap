@@ -1,3 +1,4 @@
+-- 未发布阶段统一初始化：空库直接创建最终结构与业务规则，不执行旧数据回填。
 -- 月谕圣牌交换站：业务身份使用账号 ID；游戏 UID 可重复，且不参与鉴权。
 CREATE SCHEMA swap_private;
 REVOKE ALL ON SCHEMA swap_private FROM PUBLIC;
@@ -119,11 +120,12 @@ CREATE TABLE swap_private.credit_events (
 );
 CREATE INDEX credit_events_owner ON swap_private.credit_events(account_id, created_at, event_id);
 
+-- CloudBase PG 网关会改写 SQLSTATE 并丢弃 DETAIL；将安全的业务错误封装到 MESSAGE。
 CREATE FUNCTION swap_private.fail(code text, status integer DEFAULT 409, retry_at timestamptz DEFAULT NULL)
 RETURNS void LANGUAGE plpgsql SET search_path = pg_catalog, public AS $$
 BEGIN
-  RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = code,
-    DETAIL = jsonb_build_object('status', status, 'retryAt', extract(epoch FROM retry_at) * 1000)::text;
+  RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'SWAP_ERROR:' ||
+    jsonb_build_object('code',code,'status',status,'retryAt',extract(epoch FROM retry_at)*1000)::text;
 END $$;
 
 CREATE FUNCTION swap_private.ms(t timestamptz) RETURNS bigint
@@ -269,7 +271,9 @@ END $$;
 
 CREATE FUNCTION swap_private.pool_stats(region_name text) RETURNS jsonb
 LANGUAGE sql STABLE SET search_path = pg_catalog, public, swap_private AS $$
-  WITH pool AS (SELECT give,want FROM public.listings WHERE region=region_name AND status='waiting' AND give<>'{}' AND cardinality(want)>0),
+  WITH pool AS (SELECT l.give,l.want FROM public.listings l JOIN public.players p ON p.account_id=l.account_id
+    WHERE l.region=region_name AND l.status='waiting' AND l.give<>'{}' AND cardinality(l.want)>0
+      AND p.credit>=30 AND (p.cooldown_until IS NULL OR p.cooldown_until<=now())),
   supply AS (SELECT card,sum(quantity::integer) AS quantity FROM pool CROSS JOIN LATERAL jsonb_each_text(give) AS e(card,quantity) GROUP BY card),
   demand AS (SELECT card::text AS card,count(*) AS quantity FROM pool CROSS JOIN LATERAL unnest(want) card GROUP BY card),
   rarity AS (SELECT demand.card,demand.quantity::numeric/(coalesce(supply.quantity,0)+1) AS quantity FROM demand LEFT JOIN supply USING(card))
@@ -320,6 +324,7 @@ BEGIN
   RETURN created;
 END $$;
 
+-- 游标保留数据库时间戳的微秒精度，避免按毫秒序列化后翻页重复或漏项。
 CREATE FUNCTION swap_private.state(actor text, cursor_data jsonb DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql STABLE SET search_path = pg_catalog, public, swap_private AS $$
 DECLARE p public.players; a public.accounts; l public.listings; active jsonb; history jsonb; next_cursor jsonb;
@@ -330,15 +335,21 @@ BEGIN
   SELECT * INTO l FROM public.listings WHERE account_id=actor AND status='waiting';
   SELECT coalesce(jsonb_agg(swap_private.match_view(m,actor) ORDER BY m.created_at DESC,m.id DESC),'[]') INTO active
     FROM public.matches m WHERE actor IN (m.account_a,m.account_b) AND m.status IN ('matched','confirming');
+  -- 轮询只取当前状态；历史和供需统计由首次加载、操作后刷新及结束时补拉。
+  IF cursor_data->>'light'='true' THEN
+    history := NULL; stats := NULL;
+  ELSE
   SELECT coalesce(jsonb_agg(swap_private.match_view(m,actor) ORDER BY m.created_at DESC,m.id DESC),'[]') INTO history
     FROM (SELECT * FROM public.matches WHERE actor IN (account_a,account_b) AND status NOT IN ('matched','confirming')
-      AND (cursor_data IS NULL OR (created_at,id)<(to_timestamp((cursor_data->>'at')::numeric/1000),(cursor_data->>'id')::uuid))
+      AND (cursor_data IS NULL OR (created_at,id)<((cursor_data->>'at')::timestamptz,(cursor_data->>'id')::uuid))
       ORDER BY created_at DESC,id DESC LIMIT 21) m;
   more := jsonb_array_length(history)>20;
   IF more THEN
-    history := history-20; next_cursor := jsonb_build_object('at',(history->19)->'createdAt','id',(history->19)->'id');
+    history := history-20;
+    next_cursor := jsonb_build_object('at',(SELECT created_at FROM public.matches WHERE id=(history->19->>'id')::uuid),'id',history->19->'id');
   END IF;
   stats := swap_private.pool_stats(p.region);
+  END IF;
   reset_at := CASE WHEN p.quota_reset_at>now() THEN p.quota_reset_at ELSE swap_private.reset_at(p.server) END;
   RETURN jsonb_build_object('me',jsonb_build_object('accountId',actor,'accountType',a.account_type,'uid',p.uid,
       'uidMasked',swap_private.mask_uid(p.uid),'server',p.server,'region',p.region,'creditLevel',CASE WHEN p.credit>=90 THEN 5 WHEN p.credit>=60 THEN 4 WHEN p.credit>=30 THEN 2 ELSE 1 END,
@@ -347,6 +358,9 @@ BEGIN
     'quota',jsonb_build_object('left',CASE WHEN p.quota_reset_at>now() THEN 0 ELSE 1 END,'resetAt',swap_private.ms(reset_at)),'stats',stats);
 END $$;
 
+-- 首次确认完成后等待 10 分钟。主动确认者 +6 分，超时未确认者 +2 分。
+-- 使用 expires_at 与到期索引、定时维护；双方均未确认时仍保留 48 小时有效期。
+-- 等待确认的交换从首次成功声明时间起计算截止时间。
 CREATE FUNCTION swap_private.confirm_match(actor text, mid uuid, data jsonb) RETURNS jsonb
 LANGUAGE plpgsql SET search_path = pg_catalog, public, swap_private AS $$
 DECLARE m public.matches; mine jsonb; other jsonb; confirmation jsonb; is_a boolean; indices integer[]; other_indices integer[];
@@ -376,9 +390,10 @@ BEGIN
   ELSIF data->>'result'='completed' AND other IS NOT NULL THEN
     SELECT array_agg(value::integer ORDER BY value::integer) INTO other_indices FROM jsonb_array_elements_text(other->'completedPairs');
     IF indices<>other_indices THEN PERFORM swap_private.settle(mid,'disputed'); outcome := 'disputed';
-    ELSE PERFORM swap_private.settle(mid,'completed',indices,2,2,false,false,1,1); outcome := 'completed'; END IF;
+    ELSE PERFORM swap_private.settle(mid,'completed',indices,6,6,false,false,1,1); outcome := 'completed'; END IF;
   ELSIF data->>'result'='completed' THEN
-    UPDATE public.matches SET status='confirming' WHERE id=mid; outcome := 'confirming';
+    -- 首次成功声明后给予另一方完整的 10 分钟；重复提交在上方返回，不延长截止时间。
+    UPDATE public.matches SET status='confirming',expires_at=now()+interval '10 minutes' WHERE id=mid; outcome := 'confirming';
   ELSIF other IS NOT NULL AND other->>'result'='failed' THEN
     -- 两份失败陈述的责任不一致时，撤销先前扣分，交由申诉处理。
     IF (CASE WHEN data->>'reason'='self' THEN actor WHEN data->>'reason' IN ('no_friend','no_response','no_card','changed_mind') THEN
@@ -418,6 +433,7 @@ BEGIN
   RETURN jsonb_build_object('customUserId',a.custom_user_id);
 END $$;
 
+-- 用持久化对象索引按需唤醒数据库；保留 10 分钟自动确认与所有信用结算规则。
 CREATE FUNCTION public.swap_dispatch(p_auth_id text, p_action text, p_data jsonb DEFAULT '{}', p_custom_id text DEFAULT NULL,
   p_request_key text DEFAULT NULL, p_fingerprint text DEFAULT NULL, p_rate_keys text[] DEFAULT '{}') RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, swap_private AS $$
@@ -425,6 +441,10 @@ DECLARE actor text; a public.accounts; p public.players; l public.listings; m pu
   cached public.request_records; target_region text; lock_region text; locked_regions text[]; created jsonb;
   mid uuid; feedback_id uuid; target text; match_item jsonb; refreshed jsonb; quota_until timestamptz;
 BEGIN
+  -- 过期信号已由维护任务接管；等待分区锁后再次检查，防止晚到的业务写入丢失唤醒。
+  IF p_data ? '_maintenanceLeaseUntil' AND clock_timestamp() >= to_timestamp((p_data->>'_maintenanceLeaseUntil')::double precision/1000) THEN
+    PERFORM swap_private.fail('MAINTENANCE_LEASE_EXPIRED',409);
+  END IF;
   IF p_auth_id IS NULL OR length(p_auth_id)<1 OR length(p_auth_id)>128 THEN PERFORM swap_private.fail('UNAUTHENTICATED',401); END IF;
   IF p_custom_id IS NOT NULL THEN
     SELECT * INTO a FROM public.accounts WHERE custom_user_id=p_custom_id;
@@ -437,13 +457,18 @@ BEGIN
   actor := a.id;
   INSERT INTO public.players(account_id) VALUES (actor) ON CONFLICT DO NOTHING;
   SELECT * INTO STRICT p FROM public.players WHERE account_id=actor;
-  IF p_action='state' THEN RETURN swap_private.state(actor,nullif(p_data->'historyCursor','null'::jsonb)); END IF;
+  IF p_action='state' THEN RETURN swap_private.state(actor,CASE WHEN p_data->>'light'='true' THEN '{"light":true}'::jsonb ELSE nullif(p_data->'historyCursor','null'::jsonb) END); END IF;
   IF p_request_key IS NULL OR p_fingerprint IS NULL THEN PERFORM swap_private.fail('IDEMPOTENCY_KEY_REQUIRED',400); END IF;
 
   -- 所有业务写入先锁分区，再锁行；修改服务器时按字典序锁住新旧分区。
   target_region := CASE WHEN p_action='profile' THEN coalesce(p_data->>'region',p.region) ELSE p.region END;
   SELECT array_agg(DISTINCT r ORDER BY r) INTO locked_regions FROM unnest(ARRAY[coalesce(p.region,'unbound:'||actor),coalesce(target_region,'unbound:'||actor)]) r;
   FOREACH lock_region IN ARRAY locked_regions LOOP PERFORM pg_advisory_xact_lock(hashtextextended('swap:'||lock_region,0)); END LOOP;
+  -- 过期信号已由维护任务接管；等待分区锁后再次检查，防止晚到的业务写入丢失唤醒。
+  IF p_data ? '_maintenanceLeaseUntil' AND clock_timestamp() >= to_timestamp((p_data->>'_maintenanceLeaseUntil')::double precision/1000) THEN
+    PERFORM swap_private.fail('MAINTENANCE_LEASE_EXPIRED',409);
+  END IF;
+  p_data := p_data-'_maintenanceLeaseUntil';
   SELECT * INTO STRICT p FROM public.players WHERE account_id=actor FOR UPDATE;
   IF NOT coalesce(p.region,'unbound:'||actor)=ANY(locked_regions) THEN PERFORM swap_private.fail('STATE_CHANGED'); END IF;
   SELECT * INTO cached FROM public.request_records WHERE account_id=actor AND request_key=p_request_key AND expires_at>now();
@@ -549,7 +574,7 @@ END $$;
 
 CREATE FUNCTION public.swap_maintenance() RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, swap_private AS $$
-DECLARE partition text; m public.matches; p public.players; confirmation jsonb; indices integer[]; processed integer := 0;
+DECLARE partition text; m public.matches; p public.players; confirmation jsonb; indices integer[]; processed integer := 0; next_due timestamptz;
 BEGIN
   FOR partition IN SELECT unnest(ARRAY['asia','cn','eu','tw','us']) LOOP
     PERFORM pg_advisory_xact_lock(hashtextextended('swap:'||partition,0));
@@ -557,8 +582,8 @@ BEGIN
       confirmation := coalesce(m.confirm_a,m.confirm_b);
       IF confirmation->>'result'='completed' THEN
         SELECT array_agg(value::integer ORDER BY value::integer) INTO indices FROM jsonb_array_elements_text(confirmation->'completedPairs');
-        PERFORM swap_private.settle(m.id,'completed',indices,CASE WHEN m.confirm_a IS NOT NULL THEN 2 ELSE 0 END,
-          CASE WHEN m.confirm_b IS NOT NULL THEN 2 ELSE 0 END,false,false,1,1);
+        PERFORM swap_private.settle(m.id,'completed',indices,CASE WHEN m.confirm_a IS NOT NULL THEN 6 ELSE 2 END,
+          CASE WHEN m.confirm_b IS NOT NULL THEN 6 ELSE 2 END,false,false,1,1);
       ELSE PERFORM swap_private.settle(m.id,'expired','{}',-5,-5,true,true); END IF;
       processed := processed+1;
     END LOOP;
@@ -576,8 +601,66 @@ BEGIN
   DELETE FROM public.request_records WHERE expires_at<=now();
   DELETE FROM public.pair_blocks WHERE until_at<=now();
   DELETE FROM swap_private.rate_limits WHERE window_start<now()-interval '2 hours';
-  RETURN jsonb_build_object('processed',processed);
+  -- 调度只需这个时间，不返回账号、UID 或内部流水。清理任务允许合并到下一次实际访问。
+  SELECT min(due_at) INTO next_due FROM (
+    SELECT expires_at AS due_at FROM public.matches WHERE status IN ('matched','confirming')
+    UNION ALL SELECT cooldown_until FROM public.players WHERE region IS NOT NULL AND cooldown_until IS NOT NULL
+    UNION ALL SELECT greatest(recovered_at,coalesce(last_bad_at,created_at))+interval '7 days'
+      FROM public.players WHERE region IS NOT NULL AND credit<100
+    UNION ALL SELECT min(expires_at) FROM public.request_records
+    UNION ALL SELECT min(until_at) FROM public.pair_blocks
+    UNION ALL SELECT min(window_start)+interval '1 day' FROM swap_private.rate_limits
+  ) due;
+  RETURN jsonb_build_object('processed',processed,'nextDueAt',swap_private.ms(next_due));
 END $$;
+
+-- 任一方声明已在游戏中完成交换后，本次双方需求结束；已有匹配和占用继续保留供确认结算。
+-- 未完成的其他匹配仍可继续处理，但剩余选牌不会自动进入下一轮匹配。
+-- 单边确认及已结算时只结束对应需求，不更改任何匹配或确认结果。
+CREATE FUNCTION swap_private.close_confirmed_listings() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog, public, swap_private AS $$
+BEGIN
+  UPDATE public.listings SET status='closed',give='{}',want='{}',version=version+1,updated_at=now()
+    WHERE id IN (NEW.listing_a,NEW.listing_b) AND status='waiting';
+  RETURN NEW;
+END $$;
+
+-- 与页面保持一致：当前匹配处理完后才能开启下一轮，避免重新发布已在交换中的卡牌。
+CREATE FUNCTION swap_private.require_finished_trades() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog, public, swap_private AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM public.matches
+    WHERE NEW.account_id IN (account_a,account_b) AND status IN ('matched','confirming')) THEN
+    PERFORM swap_private.fail('ACTIVE_EXCHANGE');
+  END IF;
+  RETURN NEW;
+END $$;
+
+-- 双方主动确认或超时自动确认成功的同一笔交换只恢复一次主动发布 / 重新匹配次数。
+-- 单边确认等待期间、失败或争议均不恢复；信用处罚冷却另行处理。
+-- 自动确认成功与双方主动确认成功一样，首次结算时恢复双方各 1 次发布 / 重新匹配额度。
+-- 统一由恢复函数处理；重复结算已完成的交换不会再次刷新次数。
+CREATE FUNCTION swap_private.reset_successful_trade_quota() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog, public, swap_private AS $$
+BEGIN
+  UPDATE public.players SET quota_reset_at=NULL WHERE account_id IN (NEW.account_a,NEW.account_b);
+  RETURN NEW;
+END $$;
+
+CREATE TRIGGER close_confirmed_listings
+AFTER UPDATE OF status,confirm_a,confirm_b ON public.matches
+FOR EACH ROW WHEN (NEW.status IN ('confirming','completed'))
+EXECUTE FUNCTION swap_private.close_confirmed_listings();
+
+CREATE TRIGGER require_finished_trades
+BEFORE INSERT ON public.listings
+FOR EACH ROW EXECUTE FUNCTION swap_private.require_finished_trades();
+
+CREATE TRIGGER reset_successful_trade_quota
+AFTER UPDATE OF status ON public.matches
+FOR EACH ROW WHEN (OLD.status <> 'completed' AND NEW.status = 'completed'
+  AND (NEW.confirm_a->>'result' = 'completed' OR NEW.confirm_b->>'result' = 'completed'))
+EXECUTE FUNCTION swap_private.reset_successful_trade_quota();
 
 -- 所有业务数据与 RPC 仅服务端可用；客户端只能通过校验令牌的 HTTP API 操作。
 DO $$ DECLARE t text; BEGIN

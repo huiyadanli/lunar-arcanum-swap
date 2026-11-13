@@ -12,12 +12,12 @@
   <div class="banner banner-step" x-show="onboardHint" x-transition>
     <div class="moon-steps" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i></div>
     <span x-text="t(mode === 'quick' ? 'onboard.step3Quick' : 'onboard.step3Full')"></span>
-    <button class="icon-btn sm" @click="onboardHint = null" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#close"></use></svg></button>
+    <button class="icon-btn sm" @click="onboardHint = null" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#close'"></use></svg></button>
   </div>
 
   <div class="banner" x-show="loginHint && !loginHintClosed" x-transition>
-    <span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cloud"></use></svg></span><span x-text="t('me.loginHint')"></span>
-    <button class="icon-btn sm" @click="loginHintClosed = true" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#close"></use></svg></button>
+    <span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#cloud'"></use></svg></span><span x-text="t('me.loginHint')"></span>
+    <button class="icon-btn sm" @click="loginHintClosed = true" :aria-label="t('common.close')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#close'"></use></svg></button>
   </div>
 
   <!-- 完整 Box：统计 + 筛选 -->
@@ -56,9 +56,9 @@
       <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#chevron-right'"></use></svg>
     </button>
     <button class="box-tool is-gold" @click="openNamecard()" :disabled="!canCreateNamecard">
-      <span class="box-tool-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="assets/icons/ui.svg#cards"></use></svg></span>
+      <span class="box-tool-icon"><svg class="icon icon-lg" aria-hidden="true"><use :href="imageImportIcons + '#cards'"></use></svg></span>
       <span class="box-tool-text"><b x-text="t('namecard.entry')"></b><small x-text="t('namecard.entryHint')"></small></span>
-      <svg class="icon icon-sm" aria-hidden="true"><use href="assets/icons/ui.svg#chevron-right"></use></svg>
+      <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#chevron-right'"></use></svg>
     </button>
   </div>
 
@@ -71,7 +71,7 @@
           <button :class="{ on: filter === 'spare' }" @click="filter = 'spare'" x-text="t('box.filterSpare')"></button>
         </div>
         <button class="chip-btn" :class="{ on: batch }" @click="batch = !batch">
-          <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="'assets/icons/ui.svg#' + (batch ? 'check' : 'edit')"></use></svg>
+          <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#' + (batch ? 'check' : 'edit')"></use></svg>
           <span x-text="t(batch ? 'box.batchDone' : 'box.batch')"></span>
         </button>
       </div>
@@ -122,7 +122,7 @@
           <template x-if="mode === 'full'">
             <span>
               <span class="tile-spare" x-show="spare(c.id) > 0" x-text="'+' + spare(c.id)"></span>
-              <span class="tile-want" x-show="count(c.id) === 0 && wanted(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg></span>
+              <span class="tile-want" x-show="count(c.id) === 0 && wanted(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#star'"></use></svg></span>
               <span class="tile-count" x-show="count(c.id) > 0" x-text="'×' + count(c.id)"></span>
               <span class="tile-tag" x-show="tileState(c.id) === 'missing'" x-text="t('box.tagMissing')"></span>
             </span>
@@ -131,16 +131,16 @@
           <template x-if="mode === 'quick'">
             <span>
               <span class="tile-count give" x-show="quick.give[c.id]" x-text="'×' + quick.give[c.id]"></span>
-              <span class="tile-want" x-show="quick.want.includes(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#star"></use></svg></span>
+              <span class="tile-want" x-show="quick.want.includes(c.id)"><svg class="icon icon-sm icon-fill" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#star'"></use></svg></span>
             </span>
           </template>
-          <span class="tile-lock" x-show="lockedGive(c.id) || lockedGet(c.id)"><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#lock"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
+          <span class="tile-lock" x-show="lockedGive(c.id) || lockedGet(c.id)"><svg class="icon icon-xs" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#lock'"></use></svg> <span x-text="t('box.tagLocked')"></span></span>
         </button>
         <span class="tile-name" x-text="cardName(c.id)"></span>
         <div class="mini-stepper" x-show="batch && mode === 'full'">
-          <button @click="setCount(c.id, count(c.id) - 1)" aria-label="-1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#minus"></use></svg></button>
+          <button @click="setCount(c.id, count(c.id) - 1)" aria-label="-1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#minus'"></use></svg></button>
           <b x-text="count(c.id)"></b>
-          <button @click="setCount(c.id, count(c.id) + 1, $event)" aria-label="+1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#plus"></use></svg></button>
+          <button @click="setCount(c.id, count(c.id) + 1, $event)" aria-label="+1"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#plus'"></use></svg></button>
         </div>
       </div>
     </template>
@@ -157,7 +157,7 @@
               <img class="chip-card" :src="card(id).img.s" alt="" :title="cardName(id)">
             </template>
             <em x-show="giveIds.length > 5" x-text="'+' + (giveIds.length - 5)"></em>
-            <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+            <span class="bar-swap"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg></span>
             <small x-text="t('box.barWant')"></small>
             <template x-for="id in wantList.slice(0, 5)" :key="'w' + id">
               <img class="chip-card want" :src="card(id).img.s" alt="" :title="cardName(id)">
@@ -178,7 +178,7 @@
             <button class="link-btn inline" @click="syncListing()" x-text="t('box.syncListing')"></button>
           </div>
         </div>
-        <button class="btn btn-ghost" @click="go('trade')"><span x-text="t('nav.trade')"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg></button>
+        <button class="btn btn-ghost" @click="go('trade')"><span x-text="t('nav.trade')"></span><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#arrow-right'"></use></svg></button>
       </div>
     </template>
   </div>

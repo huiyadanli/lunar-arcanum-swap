@@ -3,9 +3,9 @@
   <template x-if="currentMatch">
     <div x-data="{ get m() { return this.currentMatch } }">
       <header class="page-head">
-        <button class="icon-btn" @click="go('trade')" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg></button>
+        <button class="icon-btn" @click="go('trade')" :aria-label="t('common.back')"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-left'"></use></svg></button>
         <h1 x-text="t('match.title')"></h1>
-        <span class="countdown" x-show="['matched', 'confirming'].includes(m.status)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#timer"></use></svg> <span x-text="t('trade.expiresIn', { time: timeLeft(m.expiresAt) })"></span></span>
+        <span class="countdown" x-show="['matched', 'confirming'].includes(m.status)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#timer'"></use></svg> <span x-text="t('trade.expiresIn', { time: timeLeft(m.expiresAt) })"></span></span>
       </header>
 
       <!-- 交换对象 -->
@@ -21,7 +21,7 @@
           <span class="moons" x-text="moons(m.partner.creditLevel)"></span>
           <span class="hint" x-text="t(m.partner.creditLevel >= 5 ? 'match.credit' : 'match.creditOk')"></span>
         </div>
-        <p class="partner-note" x-show="noteText(m.partner.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#message"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
+        <p class="partner-note" x-show="noteText(m.partner.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#message'"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
         <div class="row-btns" x-show="m.partner.uid">
           <button class="btn btn-ghost sm" @click="copy(m.partner.uid)" x-text="t('match.copyUid')"></button>
         </div>
@@ -36,7 +36,7 @@
               <img :src="card(p.give).img.s" alt="" :style="`--card-color:${card(p.give).color}`">
               <div><small x-text="t('match.youGive')"></small><b x-text="cardName(p.give)"></b></div>
             </div>
-            <span class="pair-arrow"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg></span>
+            <span class="pair-arrow"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg></span>
             <div class="pair-card get">
               <img :src="card(p.get).img.s" alt="" :style="`--card-color:${card(p.get).color}`">
               <div><small x-text="t('match.youGet')"></small><b x-text="cardName(p.get)"></b></div>
@@ -49,8 +49,8 @@
       <!-- 对方先确认后仍可查看 UID，随后由我方确认完成。 -->
       <template x-if="canStartTrade(m)">
         <div class="cta-block">
-          <button class="btn btn-primary btn-block btn-lg btn-shine" :disabled="busy" @click="startTrade(m)">
-            <span x-text="t(m.status === 'confirming' ? 'match.review' : 'match.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#arrow-right"></use></svg>
+          <button class="btn btn-primary btn-block btn-lg btn-shine" :disabled="busy" :aria-busy="busy" @click="startTrade(m)">
+            <span x-text="t(m.status === 'confirming' ? 'match.review' : 'match.start')"></span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#arrow-right'"></use></svg>
           </button>
           <p class="hint center" x-text="t('match.startHint')"></p>
           <button class="link-btn center muted" @click="openProblem(m, 'self')" x-text="t('match.quit')"></button>
@@ -87,7 +87,7 @@
           </ol>
           <!-- 真实接口的 confirming 是双方共享状态；对方先确认后，我方仍须能提交结果。 -->
           <div class="row-btns stretch" x-show="!m.myConfirm">
-            <button class="btn btn-primary" :disabled="busy" @click="openDone(m)"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#check"></use></svg><span x-text="t('match.doneBtn')"></span></button>
+            <button class="btn btn-primary" :disabled="busy" @click="openDone(m)"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#check'"></use></svg><span x-text="t('match.doneBtn')"></span></button>
             <button class="btn btn-ghost" :disabled="busy" @click="openProblem(m)" x-text="t('match.problemBtn')"></button>
           </div>
         </div>

@@ -52,21 +52,10 @@ body.is-welcome #views { padding-bottom: 0; }
 .showcase-corner { position: absolute; inset: -5px; opacity: 0; pointer-events: none; border-radius: 8px; border: 1px solid #e9c77b66; clip-path: polygon(0 0, 17% 0, 17% 1%, 83% 1%, 83% 0, 100% 0, 100% 13%, 99% 13%, 99% 87%, 100% 87%, 100% 100%, 83% 100%, 83% 99%, 17% 99%, 17% 100%, 0 100%, 0 87%, 1% 87%, 1% 13%, 0 13%); transition: opacity .4s; }
 .showcase-card.is-active .showcase-corner { opacity: 1; }
 .showcase.is-dragging .showcase-card { transition-duration: .1s; }
-.showcase-caption { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 72px; margin-top: 16px; }
+.showcase-caption { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 44px; margin-top: 16px; }
 .showcase-roman { color: var(--moon-gold); font: 11px var(--font-display); letter-spacing: .24em; }
 .showcase-caption b { font-family: var(--font-display); font-size: 19px; font-weight: 500; letter-spacing: .12em; }
-.showcase-edition { color: var(--text-3); font-size: 10px; letter-spacing: .15em; }
-.showcase-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 7px; }
-.showcase-arrow { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #d6def024; border-radius: 50%; color: var(--text-2); transition: color .2s, background .2s; }
-.showcase-arrow:hover { color: var(--moon-gold); background: #e9c77b0c; border-color: #e9c77b55; }
-.showcase-dots { display: flex; }
-.showcase-dots button { width: 26px; height: 44px; display: grid; place-items: center; }
-.showcase-dots span { display: block; width: 5px; height: 5px; border-radius: 50%; background: #71758f; transition: transform .3s, background .3s; }
-.showcase-dots button.on span { background: var(--moon-gold); transform: scale(1.4); box-shadow: 0 0 12px #e9c77b55; }
-.showcase-hint { font-size: 10px; color: var(--text-3); letter-spacing: .08em; margin-top: 10px; }
-.welcome-eyebrow { display: inline-flex; align-items: center; gap: 10px; color: var(--moon-gold); font-size: 11px; letter-spacing: .18em; }
-.welcome-eyebrow > span:first-child { width: 5px; height: 5px; rotate: 45deg; background: var(--moon-gold); box-shadow: 0 0 14px #e9c77b77; }
-.welcome-description { max-width: 330px; color: var(--text-2); font-size: 13px; line-height: 1.9; }
+.welcome-description { max-width: 100%; color: var(--text-2); font-size: clamp(11px, 3.2vw, 13px); line-height: 1.9; text-wrap: balance; }
 @keyframes floaty { 50% { transform: translateY(-8px); } }
 @keyframes celestial-turn { to { transform: rotate(360deg); } }
 @keyframes star-breathe { from { opacity: .35; transform: scale(.8); } to { opacity: 1; transform: scale(1.1); } }
@@ -78,7 +67,6 @@ body.is-welcome #views { padding-bottom: 0; }
   -webkit-background-clip: text; background-clip: text; color: transparent;
   text-shadow: 0 0 30px rgba(214, 222, 240, 0.15);
 }
-.welcome-tagline { color: var(--moon-gold); font-size: 16px; letter-spacing: 0.14em; }
 .welcome-steps { display: flex; gap: 18px; list-style: none; padding: 0; margin: 10px 0 8px; font-size: 13px; color: var(--text-2); }
 .welcome-steps li { display: flex; align-items: center; gap: 6px; }
 .welcome-steps b { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; border: 1px solid var(--border-strong); color: var(--moon-silver); font-family: var(--font-display); }
@@ -96,8 +84,7 @@ body.is-welcome #views { padding-bottom: 0; }
   .celestial-seal { width: 410px; }
   .welcome-copy { grid-column: 1; grid-row: 1; align-items: flex-start; text-align: left; gap: 22px; }
   .welcome-title { max-width: 470px; font-size: clamp(36px, 3.6vw, 49px); letter-spacing: .08em; line-height: 1.45; }
-  .welcome-tagline { font-size: 20px; letter-spacing: .12em; }
-  .welcome-description { max-width: 340px; font-size: 14px; }
+  .welcome-description { font-size: 14px; }
   .welcome-steps { margin: 4px 0 0; gap: 22px; }
   .welcome .btn-primary { margin-top: 12px; min-height: 54px; max-width: 330px; }
   .welcome .lang-switch { margin-top: 8px; }
@@ -105,13 +92,13 @@ body.is-welcome #views { padding-bottom: 0; }
 
 /* 首次录入和修改 UID 共用表单宽度与纵向间距。 */
 .onboard, .uid-form { display: flex; flex-direction: column; gap: 16px; max-width: 440px; width: 100%; margin: 0 auto; }
-.onboard { padding-top: 8px; }
+.onboard { gap: 14px; padding-top: 8px; }
 .uid-form .sheet-title { margin: 0; font-size: 24px; }
 .sheet .uid-form .btn-block { margin-top: 0; }
 .onboard-top { display: flex; align-items: center; gap: 12px; }
 .onboard-top .moon-steps { flex: 1; }
 .onboard-step { font-size: 12px; color: var(--text-3); }
-.onboard-title { font-size: 24px; margin-top: 12px; }
+.onboard-title { font-size: 24px; line-height: 1.3; margin: 18px 0 2px; }
 .uid-field input {
   width: 100%; height: 64px; padding: 0 16px; border-radius: 16px; text-align: center;
   font-family: var(--font-mono); font-size: 28px; letter-spacing: 0.08em;
@@ -121,10 +108,13 @@ body.is-welcome #views { padding-bottom: 0; }
 .uid-field input::placeholder { font-size: 17px; letter-spacing: 0; color: var(--text-3); font-family: var(--font-sans); }
 .uid-field.is-bad input { border-color: var(--bad); animation: shake 0.35s; }
 @keyframes shake { 25% { transform: translateX(-6px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-3px); } }
-.server-slot { min-height: 76px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.server-slot { min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+.server-slot .hint { line-height: 1.5; }
 .privacy { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: var(--text-2); padding: 10px 12px; border-radius: 12px; background: var(--surface-1); }
 .privacy .icon { margin-top: 2px; }
-.onboard .btn-primary { margin-top: auto; }
+/* 「下一步」紧跟输入区；不贴底，避免软键盘收起/弹出时按钮位移导致点击落空 */
+.onboard .btn-primary { margin-top: 0; }
+.onboard .privacy { margin-top: 4px; }
 .mode-card {
   display: flex; align-items: center; gap: 14px; padding: 18px 16px; text-align: left; border-radius: 18px;
   background: var(--surface-1); border: 1px solid var(--border-strong); transition: border-color 0.2s, transform 0.15s;
@@ -409,3 +399,8 @@ body.is-welcome #views { padding-bottom: 0; }
 .pf-follow.on { background: #E3E5E7; color: #61666D; }
 .pf-space-body { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; }
 .pf-space-body i { aspect-ratio: 16 / 10; border-radius: 8px; background: #E3E5E7; }
+
+/* BetterGI 项目归属：低调的文字链接 */
+.brand-link { color: var(--text-3); font-size: 12px; letter-spacing: .08em; text-decoration: none; transition: color .2s; }
+.brand-link:hover, .brand-link:focus-visible { color: var(--moon-gold); }
+.foot .brand-link { display: inline-block; margin-top: 6px; }

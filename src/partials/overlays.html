@@ -1,9 +1,16 @@
 <!-- 全局浮层：Toast、匹配揭晓、模拟的 B站 平台界面、原型调试入口 -->
 
+<!-- 请求等待提示：顶部进度条 + 状态胶囊；慢请求时改为说明文案 -->
+<div class="request-bar" x-show="requesting" x-cloak aria-hidden="true"></div>
+<div class="request-status" x-show="requesting" x-cloak role="status" aria-live="polite">
+  <span class="request-spinner" aria-hidden="true"></span>
+  <span x-text="t(slowRequest ? 'common.requestingSlow' : 'common.requesting')"></span>
+</div>
+
 <!-- Toast -->
 <div class="toasts" aria-live="polite">
   <template x-for="tt in toasts" :key="tt.id">
-    <div class="toast" x-transition:enter="toast-enter" x-transition:enter-start="toast-from">
+    <div class="toast" :class="{ 'is-error': tt.error }" x-transition:enter="toast-enter" x-transition:enter-start="toast-from">
       <span x-text="tt.msg"></span>
       <button class="link-btn" x-show="tt.action" @click="tt.onAction && tt.onAction(); dismissToast(tt.id)" x-text="tt.action"></button>
     </div>
@@ -22,7 +29,7 @@
       <img class="rv-card rv-right" :src="card(revealing.get).img.l" alt="" :style="`--card-color:${card(revealing.get).color}`">
       <div class="rv-title">
         <b x-text="t('trade.matchedTitle')"></b>
-        <span class="pair-label"><span x-text="cardName(revealing.give)"></span><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#swap"></use></svg><span x-text="cardName(revealing.get) + (revealing.n > 1 ? ' · ' + t('trade.pairs', { n: revealing.n }) : '')"></span></span>
+        <span class="pair-label"><span x-text="cardName(revealing.give)"></span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#swap'"></use></svg><span x-text="cardName(revealing.get) + (revealing.n > 1 ? ' · ' + t('trade.pairs', { n: revealing.n }) : '')"></span></span>
       </div>
       <button type="button" class="rv-skip" x-text="t('trade.tapSkip')"></button>
     </div>
@@ -45,7 +52,7 @@
 <!-- 模拟：UP主 空间（navigate type=space） -->
 <div class="pf-space" x-show="platformDialog === 'space'" x-cloak>
   <div class="pf-space-bar">
-    <button @click="resolveDialog()"><svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#chevron-left"></use></svg> <span x-text="t('platform.backToToy')"></span></button>
+    <button @click="resolveDialog()"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-left'"></use></svg> <span x-text="t('platform.backToToy')"></span></button>
     <small class="pf-mock" x-text="t('platform.spaceLabel')"></small>
   </div>
   <div class="pf-space-head">
@@ -61,4 +68,4 @@
 </div>
 
 <!-- 原型调试入口 -->
-<button class="dev-fab" x-show="!online && route !== 'welcome' && !revealing" x-cloak @click="sheet = 'debug'" aria-label="原型调试"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#wrench"></use></svg></button>
+<button class="dev-fab" x-show="!online && route !== 'welcome' && !revealing" x-cloak @click="sheet = 'debug'" aria-label="原型调试"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#wrench'"></use></svg></button>

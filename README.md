@@ -1,6 +1,6 @@
 # lunar-arcanum-swap
 
-原神「月谕圣牌」交换站。设计文档见 [docs/design.md](docs/design.md)，后端方案见 [CloudBase 后端概要设计](docs/cloudbase-backend-design.md)（21 个接口精简为 11 个，已部署并提供前端接入模式）。
+**更好的原神 · 月谕圣牌交换站**，隶属于 [BetterGI](https://github.com/babalae/better-genshin-impact) 项目。原神「月谕圣牌」交换站。设计文档见 [docs/design.md](docs/design.md)，后端方案见 [CloudBase 后端概要设计](docs/cloudbase-backend-design.md)（21 个接口精简为 11 个，已部署并提供前端接入模式）。
 
 米游社图片导入 Box 已接入，见[当前设计与实现说明](docs/miyoushe-box-import-flexible.md)。采用浏览器本地颜色分割与自适应牌框定位，不依赖固定分辨率、宽高比或页首页尾模板，仅保留493字节的数字“2”特征。实际JavaScript核心已通过三张原图及缩放、裁边、留边、行距变化等36个回归用例。
 
@@ -50,7 +50,7 @@ npm run preview
 
 需要构建连接真实 API 的版本时，执行 `npm run build:online`；随后可用 `npm run preview` 预览。
 
-同一份线上构建可用于 B站 Toy 和独立站：页面仅在 `bilibili.com` 或其子域名下自动加载真实 Toy SDK，并等待加载后再识别 App / Web 能力；其他域名不加载、不启用真实 Toy SDK。加载失败或超过 10 秒时记录控制台警告，继续使用独立站能力。本地默认模拟模式仍支持 `?mock=bili` 等显式模拟参数，B站域名下不会注入模拟 SDK。
+同一份线上构建可用于 B站 Toy 和独立站：页面仅在 `bilibili.com`、`bilibilitoy.com` 或其子域名下自动加载真实 Toy SDK，并等待加载后再识别 App / Web 能力；其他域名不加载、不启用真实 Toy SDK。加载失败或超过 10 秒时记录控制台警告，继续使用独立站能力。本地默认模拟模式仍支持 `?mock=bili` 等显式模拟参数，B站域名下不会注入模拟 SDK。
 
 构建产物在 `dist/`，包含 `index.html` 和带内容哈希的 JS、CSS、卡图、字体。
 HTML 页面片段通过 `?raw` 在构建时打包，不再在运行时请求 `src/partials/`。
@@ -89,7 +89,7 @@ CI 中可使用 `npm ci` 安装锁定版本，然后执行 `npm run build`；静
 - 匹配：主动扫描最多 3 对、揭晓动画、UID 全程脱敏 →「开始交换」才显示（解码动画）→ B站用户需先关注 UP主
 - 完成 / 遇到问题的确认流程，完成后 Box 自动更新（可撤销）
 - 我的：两类用户的账号卡片、云同步状态、Box 字母码导出 / 导入、语言 / 特效 / 保留张数
-- 特效三档（华丽 / 流畅 / 关闭）自动检测，运行中持续掉帧会自动降档；中英双语
+- 特效仅提供开 / 关两种设置；开启时内部自动检测画质（华丽 / 流畅），运行中持续掉帧会自动降档；中英双语
 
 ### 交换名片
 

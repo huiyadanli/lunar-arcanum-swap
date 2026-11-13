@@ -61,7 +61,7 @@ function app() {
 
     // ---------- 持久化状态 ----------
     lang: saved.lang || detectLang(),
-    fxPref: saved.fxPref || 'auto',
+    fxOn: saved.fxOn ?? saved.fxPref !== 'off', // 兼容旧版 fxPref：只有明确选过“关闭”才保持关闭
     fxAuto: saved.fxAuto || null,
     keep: saved.keep ?? 1,
     uid: saved.uid || '',
@@ -106,6 +106,8 @@ function app() {
     authorInfo: null,
     uidPeek: false,
     busy: false,
+    requesting: false,
+    slowRequest: false,
     accountType: 'anon',
     loginHint: false,
     loginHintClosed: false,
@@ -122,20 +124,22 @@ function app() {
     _press: null,
     _dialogResolve: null,
     _syncTimer: 0,
+    _requestTimers: null,
     _touchX: null,
 
     // ====================================================================
     async init() {
-      this.applyFx(this.fxPref === 'auto' ? this.fxAuto || 'high' : this.fxPref);
+      api.subscribePending?.((count) => this.trackRequests(count));
+      this.applyFx(this.fxOn ? this.fxAuto || 'high' : 'off');
       this.stars = startStars(document.getElementById('stars'));
-      if (this.fxPref === 'auto' && !this.fxAuto) {
+      if (this.fxOn && !this.fxAuto) {
         detectTier().then((tier) => {
           this.fxAuto = tier;
-          if (this.fxPref === 'auto') this.applyFx(tier);
+          if (this.fxOn) this.applyFx(tier);
         });
       }
       watchLowFps(() => {
-        if (this.fxPref === 'auto' && this.fx === 'high') {
+        if (this.fxOn && this.fx === 'high') {
           this.fxAuto = 'lite';
           this.applyFx('lite');
           this.toast(this.t('fx.downgraded'));
@@ -187,8 +191,8 @@ function app() {
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') { this.flushCloudSync(); this.pollState(); }
-        if (document.visibilityState === 'visible' && this.sheet === 'follow') this.recheckFollow(true).catch(error => this.showApiError(error));
-        if (document.visibilityState === 'visible') this.refresh(true).catch(error => this.showApiError(error));
+        if (document.visibilityState === 'visible' && this.sheet === 'follow') this.recheckFollow(true).catch(error => this.showApiError(error, { background: true }));
+        if (document.visibilityState === 'visible') this.refresh(true).catch(error => this.showApiError(error, { background: true }));
       });
 
       window.addEventListener('hashchange', () => this.parseRoute(true));
@@ -200,7 +204,7 @@ function app() {
 
     snapshot() {
       return {
-        lang: this.lang, fxPref: this.fxPref, fxAuto: this.fxAuto, keep: this.keep, uid: this.uid,
+        lang: this.lang, fxOn: this.fxOn, fxAuto: this.fxAuto, keep: this.keep, uid: this.uid,
         onboarded: this.onboarded, mode: this.mode,
         counts: this.counts, wantOff: this.wantOff, quick: this.quick, profile: this.profile,
         profileDeclined: this.profileDeclined, anonTag: this.anonTag, session: ONLINE_BACKEND ? null : this.session,
@@ -330,9 +334,24 @@ function app() {
       document.documentElement.dataset.fx = tier;
       this.stars?.refresh();
     },
-    setFxPref(p) {
-      this.fxPref = p;
-      this.applyFx(p === 'auto' ? this.fxAuto || 'high' : p);
+    toggleFx() {
+      this.fxOn = !this.fxOn;
+      this.applyFx(this.fxOn ? this.fxAuto || 'high' : 'off');
+    },
+    // 请求超过 400ms 才显示等待提示，避免快速请求造成闪烁；超过 4s 说明服务响应慢（如云函数冷启动），提示用户耐心等待。
+    trackRequests(count) {
+      if (count > 0) {
+        if (this._requestTimers) return;
+        this._requestTimers = [
+          setTimeout(() => (this.requesting = true), 400),
+          setTimeout(() => (this.slowRequest = true), 4000),
+        ];
+        return;
+      }
+      this._requestTimers?.forEach(clearTimeout);
+      this._requestTimers = null;
+      this.requesting = false;
+      this.slowRequest = false;
     },
     toast(msg, opts = {}) {
       const id = Math.random();
@@ -394,7 +413,14 @@ function app() {
       return this.uidState.state === 'ok';
     },
     async confirmUid() {
-      if (!this.uidReady || this.busy) return;
+      if (this.busy) return;
+      if (!this.uidReady) {
+        // 按钮保持可点：未通过校验时说明原因并回到输入框，而不是毫无反应
+        const { state } = this.uidState;
+        this.toast(this.t(state === 'invalid' ? 'onboard.uidInvalid' : state === 'unknown' ? 'onboard.uidUnknown' : 'onboard.uidTyping'));
+        document.querySelector('.uid-input')?.focus();
+        return;
+      }
       this.busy = true;
       try {
         const uid = this.uidInput;
@@ -620,7 +646,8 @@ function app() {
           this.go(`trade/${res.matches[0].id}`);
         }
       } catch (e) {
-        this.toast(e.code === 'DAILY_LIMIT' ? this.t('publish.quotaUsed', { time: this.timeLeft(e.retryAt) }) : String(e.code || e.message));
+        if (e.code === 'DAILY_LIMIT') this.toast(this.t('publish.quotaUsed', { time: this.timeLeft(e.retryAt) }));
+        else this.showApiError(e);
       } finally {
         this.busy = false;
       }
@@ -649,7 +676,8 @@ function app() {
         try { await refreshing; } catch (error) { this.showApiError(error); }
       }
       refreshing = (async () => {
-        const s = await api.getState(this.serverKey, { light: !fresh && this.ready });
+        const background = !fresh && this.ready;
+        const s = await api.getState(this.serverKey, { light: background, background });
         Object.assign(this, { listing: s.listing, matches: s.matches, quotaLeft: s.quotaLeft, resetAt: s.resetAt, completedCount: s.completedCount });
         if (ONLINE_BACKEND) {
           // 身份、额度和匹配以服务端为准；完整 Box 仍按原有方式保存在本机或 Toy 云存储。
@@ -667,14 +695,15 @@ function app() {
       if (delay === null) return;
       this._pollTimer = setTimeout(async () => {
         if (document.visibilityState === 'visible' && !this.busy) {
-          try { await this.refresh(); } catch (error) { this.showApiError(error); }
+          try { await this.refresh(); } catch (error) { this.showApiError(error, { background: true }); }
         }
         this.pollState();
       }, delay);
     },
-    showApiError(error) {
-      const message = error.message || error.code || String(error);
-      if (!ONLINE_BACKEND || this.connectionError !== message) this.toast(message);
+    // background=true 表示轮询等后台请求：同一条错误只提示一次，避免反复弹框；用户主动操作失败时始终提示。
+    showApiError(error, { background = false } = {}) {
+      const message = error?.message || error?.code || String(error) || this.t('common.requestFailed');
+      if (!(background && this.connectionError === message)) this.toast(message, { ms: 4200, error: true });
       if (ONLINE_BACKEND) this.connectionError = message;
     },
     get newMatchCount() {
@@ -718,7 +747,7 @@ function app() {
           this.go(`trade/${r.matches[0].id}`);
         } else this.toast(this.t('trade.waiting'));
       } catch (e) {
-        this.toast(String(e.code));
+        this.showApiError(e);
       } finally {
         this.busy = false;
       }
