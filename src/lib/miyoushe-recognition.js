@@ -254,7 +254,9 @@ function readQuantity(pixels, box, target, gray, neutral) {
     }
   }
   const ring = circleSupport(box, pixels, gray, neutral);
-  return ring >= 0.65 && dice >= 0.78 ? 2 : ring < 0.5 && dice < 0.65 ? 1 : null;
+  // 实测：真实“2”角标 ring≥0.71、dice≥0.83；无角标牌的插画亮线可使 ring 达 0.50、dice 至 0.59。
+  // “无角标”的 ring 上限取 0.6，处于两组之间，避免 0.50 的边界值被误判为待确认。
+  return ring >= 0.65 && dice >= 0.78 ? 2 : ring < 0.6 && dice < 0.65 ? 1 : null;
 }
 
 export async function recognizeCardPixels(pixels, options = {}) {

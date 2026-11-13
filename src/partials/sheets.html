@@ -149,6 +149,16 @@
       </div>
     </template>
 
+    <!-- 清除本地数据确认（不用原生 confirm，App 内 WebView 会拦截） -->
+    <template x-if="sheetView === 'clearData'">
+      <div class="center-col">
+        <h3 class="sheet-title" x-text="t(accountType === 'bili' ? 'me.clearBili' : 'me.clear')"></h3>
+        <p class="hint center" x-text="t(accountType === 'bili' ? 'me.clearConfirmBili' : 'me.clearConfirm')"></p>
+        <button class="btn btn-ghost danger btn-block" @click="doClearAll()" x-text="t('common.confirm')"></button>
+        <button class="btn btn-ghost btn-block" @click="sheet = null" x-text="t('common.cancel')"></button>
+      </div>
+    </template>
+
     <!-- 扫码到手机 -->
     <template x-if="sheetView === 'qr'">
       <div class="center-col">

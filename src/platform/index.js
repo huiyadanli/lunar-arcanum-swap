@@ -104,6 +104,9 @@ export const platform = {
     async set(items) {
       return withBackoff(() => window.toy.setCloudStorage(items));
     },
+    async remove(keys) {
+      return withBackoff(() => window.toy.removeCloudStorage(keys));
+    },
   },
 
   /** 必须在用户手势中调用；拒绝或不支持时返回 null。 */

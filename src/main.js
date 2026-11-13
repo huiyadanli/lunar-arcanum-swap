@@ -1160,8 +1160,22 @@ function app() {
         this.toast(this.t(error.message === 'IMAGE_IMPORT_LOCKED' ? 'me.boxImportLocked' : 'imageImport.confirmRemaining'));
       }
     },
+    // 不能用原生 confirm()：B 站等 App 内 WebView 会静默拦截并返回 false，按钮看起来完全没反应。
     clearAll() {
-      if (!confirm(this.t('me.clearConfirm'))) return;
+      this.sheet = 'clearData';
+    },
+    async doClearAll() {
+      // B站用户的 Box / 偏好还在云存储里，不删的话重载后会被 setupIdentity 恢复回来。
+      // 保留 cred（身份密钥），否则会丢失与服务端身份的关联。
+      if (this.accountType === 'bili') {
+        clearTimeout(this._syncTimer);
+        try {
+          await this.platform.cloud.remove(['box', 'quick', 'prefs', 'sync']);
+        } catch {
+          this.toast(this.t('me.clearCloudFailed'));
+          return;
+        }
+      }
       storage.clearAll();
       location.hash = '';
       location.reload();
