@@ -18,6 +18,21 @@
   <script type="module" src="src/main.js"></script>
 </head>
 <body x-data="app" :class="{ 'is-ready': ready, 'is-wide': wide, 'is-welcome': route === 'welcome' }" :data-env="platform.env" :lang="lang">
+  <!-- 首屏载入提示：纯静态，不依赖 JS；body.is-ready 后淡出 -->
+  <div id="boot-loader" role="status" aria-live="polite">
+    <div class="boot-moon" aria-hidden="true">
+      <svg viewBox="0 0 120 120">
+        <defs><clipPath id="boot-clip"><circle cx="60" cy="60" r="34"/></clipPath></defs>
+        <circle class="boot-orbit" cx="60" cy="60" r="52"/>
+        <g class="boot-spin"><circle class="boot-orbit-arc" cx="60" cy="60" r="52"/><circle class="boot-orbit-dot" cx="60" cy="8" r="2.6"/></g>
+        <circle cx="60" cy="60" r="34" class="moon-dark"/>
+        <g clip-path="url(#boot-clip)"><circle cx="60" cy="60" r="34" class="moon-lit boot-lit"/><circle cx="60" cy="60" r="34" class="boot-shade"/></g>
+      </svg>
+    </div>
+    <div class="boot-title">LUNAR ARCANUM</div>
+    <div class="boot-hint"><span lang="zh">正在汇聚月光</span><i></i><i></i><i></i></div>
+  </div>
+
   <canvas id="stars" aria-hidden="true"></canvas>
   <div class="sky-glow" aria-hidden="true"></div>
 
@@ -32,9 +47,9 @@
   <div class="shell">
     <!-- 导航：手机为底部标签栏，PC 为左侧竖排 -->
     <nav class="nav" x-show="route !== 'welcome'" x-cloak aria-label="主导航">
-      <div class="nav-brand" aria-hidden="true">
-        <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.72)" class="moon-lit"/></svg>
-      </div>
+      <a href="#/welcome" class="nav-brand" @click.prevent="goHome()" :aria-label="t('nav.home')" :title="t('nav.home')">
+        <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.72)" class="moon-lit"/></svg>
+      </a>
       <a href="#/box" class="nav-item" :class="{ on: route === 'box' }">
         <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cards"></use></svg>
         <span x-text="t('nav.box')"></span>

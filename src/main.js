@@ -10,6 +10,7 @@ import { encodeBox, decodeBox } from './lib/box-code.js';
 import { parseImageCount, createImageBoxPatch } from './lib/image-box-draft.js';
 import imageImportIcons from '../assets/icons/ui.svg?url';
 import { renderExchangeCard } from './lib/exchange-card.js';
+import { pickTagline } from './data/taglines.js';
 import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selection.js';
 import { hasWaitingCards, canStartTrade, matchStatus } from './lib/trade-state.js';
 import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote } from './lib/trade-notes.js';
@@ -81,6 +82,7 @@ function app() {
     route: 'box',
     param: null,
     onboardStep: 0,
+    replayWelcome: false, // 已完成引导的用户点 logo 回到首页重看引导
     onboardHint: null,
     uidInput: '',
     fx: 'high',
@@ -121,6 +123,8 @@ function app() {
     namecard: null,
     _namecardRevision: 0,
     wide: matchMedia('(min-width: 1024px)').matches,
+    // 有鼠标/键盘的设备才提示 Ctrl+V 粘贴；触屏手机没有这个操作。
+    canPaste: matchMedia('(hover: hover) and (pointer: fine)').matches,
     _press: null,
     _dialogResolve: null,
     _syncTimer: 0,
@@ -196,6 +200,8 @@ function app() {
       });
 
       window.addEventListener('hashchange', () => this.parseRoute(true));
+      // PC：截图或复制图片后直接 Ctrl+V，不必先保存成文件。
+      document.addEventListener('paste', (event) => this.onImageBoxPaste(event));
       this.parseRoute(false);
       try { await this.refresh(); } catch (error) { this.showApiError(error); }
       this.ready = true;
@@ -372,9 +378,10 @@ function app() {
       const [r, p] = location.hash.replace(/^#\/?/, '').split('/');
       let route = ROUTES.includes(r) ? r : this.onboarded ? 'box' : 'welcome';
       if (!this.onboarded && route !== 'welcome') route = 'welcome';
-      if (this.onboarded && route === 'welcome' && !this.onboardStep) route = 'box';
+      if (this.onboarded && route === 'welcome' && !this.onboardStep && !this.replayWelcome) route = 'box';
       const apply = () => {
         this.route = route;
+        if (route !== 'welcome') this.replayWelcome = false;
         this.param = p || null;
         this.sheet = null;
         window.scrollTo(0, 0);
@@ -400,6 +407,11 @@ function app() {
     },
     serverKeyOf(uid) {
       return resolveUid(uid).server || null;
+    },
+    goHome() {
+      this.replayWelcome = true;
+      this.onboardStep = 0;
+      this.go('welcome');
     },
     startOnboarding() {
       this.uidInput = this.uid;
@@ -918,11 +930,32 @@ function app() {
       this.namecard = {
         give: { ...request.give }, want: [...request.want], source,
         displayName: this.displayName, server: this.serverName(this.serverKey), uid: this.uid, lang: this.lang,
-        createdAt: Date.now(), includeUid: true, site: null, image: null,
+        createdAt: Date.now(), tagline: pickTagline(this.lang), includeUid: true, site: null, image: null,
         generating: false, saving: false, error: null,
       };
       this.sheet = 'namecard';
       await this.generateNamecard();
+    },
+    /** 名片的纯文本版本：与图片内容一致，末尾附站点链接，便于粘贴到不能发图的地方。 */
+    get namecardText() {
+      const c = this.namecard;
+      if (!c?.site) return '';
+      const en = c.lang === 'en';
+      const name = (id) => `${CARD_BY_ID[id].emoji}${CARD_BY_ID[id].name[en ? 'en' : 'zh-CN']}`;
+      const give = Object.keys(c.give).map(Number).filter((id) => c.give[id] > 0).sort((a, b) => a - b)
+        .map((id) => `${name(id)}×${c.give[id]}`).join(en ? ', ' : '、');
+      const want = [...c.want].sort((a, b) => a - b).map(name).join(en ? ', ' : '、');
+      const who = [c.displayName, c.server, c.includeUid && c.uid ? `UID ${c.uid}` : ''].filter(Boolean).join(' · ');
+      return [
+        en ? '🌙 Lunar Arcanum swap card' : '🌙 月谕圣牌交换',
+        who,
+        `${en ? 'I can offer: ' : '我能给出：'}${give}`,
+        `${en ? 'Looking for: ' : '我想要：'}${want}`,
+        c.site.url,
+      ].join('\n');
+    },
+    async copyNamecardText() {
+      await this.copy(this.namecardText);
     },
     async generateNamecard() {
       const revision = ++this._namecardRevision;
@@ -1023,7 +1056,25 @@ function app() {
       // 焦点移入抽屉供键盘操作，但不画焦点环：鼠标或触屏打开时它会像一个常驻的选中框。
       this.$nextTick(() => document.getElementById('image-import-file')?.focus({ preventScroll: true, focusVisible: false }));
     },
-    async selectImageBoxFile(file) {
+    /** 从剪贴板取第一张图片；没有图片（例如粘贴文字）时返回 null，保持浏览器默认行为。 */
+    clipboardImage(event) {
+      const data = event.clipboardData;
+      if (!data) return null;
+      const files = [...(data.files || [])];
+      if (!files.length) for (const item of data.items || []) if (item.kind === 'file') { const file = item.getAsFile(); if (file) files.push(file); }
+      return files.find((file) => file.type.startsWith('image/')) || null;
+    },
+    onImageBoxPaste(event) {
+      // 只在导入抽屉已打开，或停在 Box 页且没有其他抽屉/弹层时响应，避免误触发。
+      const inImport = this.sheet === 'imageImport';
+      if (!inImport && !(this.route === 'box' && !this.sheet && !this.revealing && !this.platformDialog)) return;
+      const file = this.clipboardImage(event);
+      if (!file) return;
+      event.preventDefault();
+      if (!inImport) this.openImageBoxImport();
+      this.selectImageBoxFile(file, this.t('imageImport.pastedName'));
+    },
+    async selectImageBoxFile(file, label) {
       if (!file || !this.imageImport) return;
       const revision = ++imageRevision;
       imageController?.abort();
@@ -1033,7 +1084,7 @@ function app() {
       imageController = controller;
       const current = this.imageImport;
       Object.assign(current, {
-        fileName: file.name, url: null, phase: 'recognizing', progress: 0, error: null,
+        fileName: label || file.name, url: null, phase: 'recognizing', progress: 0, error: null,
         counts: Array(CARD_COUNT).fill(null), edited: {}, cards: [], grid: null,
         crop: null, drag: null, calibrating: false, firstId: 1, focusedCard: null,
       });

@@ -9,3 +9,11 @@ output/
 cloudfunctions/*/index.js
 
 docs/assets
+
+# Python 与工具缓存
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/

@@ -133,7 +133,7 @@ function sectionLayout(count, en, split = null) {
 }
 
 /** Canvas 直接绘制高清名片，预览即导出结果；不依赖 DOM 截图或外部生图服务。 */
-export async function renderExchangeCard({ give, want, displayName, server, uid, includeUid = true, lang, site, createdAt }) {
+export async function renderExchangeCard({ give, want, displayName, server, uid, includeUid = true, lang, site, createdAt, tagline }) {
   const en = lang === 'en';
   const giveIds = Object.keys(give).map(Number);
   const ids = [...new Set([...giveIds, ...want])];
@@ -189,14 +189,14 @@ export async function renderExchangeCard({ give, want, displayName, server, uid,
 
   // 页眉：品牌、标题与弯月。
   moon(ctx, 898, 134, 56);
-  spaced(ctx, 'LUNAR ARCANUM', M + 2, 90, 19, GOLD, 7);
+  spaced(ctx, 'BETTERGI × LUNAR ARCANUM', M + 2, 90, 19, GOLD, 5);
   const titleInk = ctx.createLinearGradient(0, 104, 0, 170);
   titleInk.addColorStop(0, '#fffaf0'); titleInk.addColorStop(1, '#e3cfa2');
   if (en) {
     text(ctx, 'A little serendipity.', M, 156, 50, titleInk, 600, SERIF);
     spaced(ctx, 'COLLECT · CONNECT · COMPLETE', M + 2, 197, 15, MUTED, 3);
   } else {
-    spaced(ctx, '月下换牌', M - 2, 162, 62, titleInk, 4, 700, SANS);
+    spaced(ctx, '月谕圣牌交换', M - 2, 162, 62, titleInk, 4, 700, SANS);
     spaced(ctx, '让多余，遇见期待。', M + 2, 201, 24, MUTED, 2, 400, SANS);
   }
 
@@ -298,7 +298,7 @@ export async function renderExchangeCard({ give, want, displayName, server, uid,
   const label = bili ? (en ? 'BILIBILI TOY' : 'B站 Toy · 更好的原神 月谕圣牌交换站') : (en ? 'INDEPENDENT SITE' : '更好的原神 · 月谕圣牌交换站');
   star(ctx, M + 34, footerY + 48, 7, GOLD);
   fitText(ctx, label, M + 52, footerY + 56, 21, urlWidth - 22, GOLD, 600);
-  fitText(ctx, en ? 'Find your missing piece.' : '缺的那张，总有人多一张。', M + 28, footerY + 108, en ? 30 : 32, urlWidth, INK, 600, en ? SERIF : SANS);
+  fitText(ctx, tagline || (en ? 'Find your missing piece.' : '缺的那张，总有人多一张。'), M + 28, footerY + 108, en ? 30 : 32, urlWidth, INK, 600, en ? SERIF : SANS);
   text(ctx, bili ? (en ? 'Scan with the Bilibili app' : '用 B站 App 扫码，来这里换牌') : (en ? 'Scan to open this swap site' : '扫码打开本站，一起寻找换牌伙伴'), M + 28, footerY + 147, 20, MUTED);
   // 使用实际链接，完整换行展示；长度过长时在下方继续排版。
   lines(ctx, displayUrl, M + 28, footerY + 184, urlWidth, 22, 16, '#8793ad');

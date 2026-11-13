@@ -216,7 +216,7 @@
             <span class="image-import-picker-icon"><svg class="icon icon-lg" aria-hidden="true"><use :href="imageImportIcons + '#import'"></use></svg></span>
             <span class="image-import-picker-text">
               <b x-text="t(imageImport.url ? 'imageImport.replace' : 'imageImport.select')"></b>
-              <small x-text="imageImport.fileName || t('imageImport.dropHint')"></small>
+              <small x-text="imageImport.fileName || (t('imageImport.dropHint') + (canPaste ? ' · ' + t('imageImport.pasteHint') : ''))"></small>
             </span>
           </label>
 
@@ -372,15 +372,24 @@
         </div>
         <div class="namecard-body">
         <div class="namecard-layout">
-          <div class="namecard-preview" :aria-busy="namecard.generating">
-            <template x-if="namecard.image">
-              <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
-            </template>
-            <div class="namecard-placeholder" x-show="!namecard.image" role="status">
-              <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="imageImportIcons + '#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
-              <p x-text="namecard.error || t('namecard.generating')"></p>
-              <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
+          <div class="namecard-main">
+            <div class="namecard-preview" :aria-busy="namecard.generating">
+              <template x-if="namecard.image">
+                <img :src="namecard.image.dataUrl" :width="namecard.image.width" :height="namecard.image.height" :alt="t('namecard.previewAlt')">
+              </template>
+              <div class="namecard-placeholder" x-show="!namecard.image" role="status">
+                <svg class="icon icon-lg" :class="{ 'icon-spin': namecard.generating }" aria-hidden="true"><use :href="imageImportIcons + '#' + (namecard.error ? 'alert' : 'sparkles')"></use></svg>
+                <p x-text="namecard.error || t('namecard.generating')"></p>
+                <button class="btn btn-ghost sm" x-show="namecard.error" @click="generateNamecard()" x-text="t('common.retry')"></button>
+              </div>
             </div>
+            <section class="namecard-text" x-show="namecard.site" aria-labelledby="namecard-text-title">
+              <div class="namecard-text-head">
+                <span><b id="namecard-text-title" x-text="t('namecard.textTitle')"></b><small x-text="t('namecard.textHint')"></small></span>
+                <button class="btn btn-ghost sm" @click="copyNamecardText()"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#copy'"></use></svg><span x-text="t('namecard.copyText')"></span></button>
+              </div>
+              <pre class="namecard-text-body" x-text="namecardText" tabindex="0"></pre>
+            </section>
           </div>
           <div class="namecard-options">
             <p class="namecard-intro" x-text="t('namecard.intro')"></p>
