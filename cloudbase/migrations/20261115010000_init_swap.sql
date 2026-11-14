@@ -325,6 +325,7 @@ BEGIN
 END $$;
 
 -- 游标保留数据库时间戳的微秒精度，避免按毫秒序列化后翻页重复或漏项。
+-- 仅比较截止时间，不为发布冷却创建维护计划；保留信用处罚冷却。
 CREATE FUNCTION swap_private.state(actor text, cursor_data jsonb DEFAULT NULL) RETURNS jsonb
 LANGUAGE plpgsql STABLE SET search_path = pg_catalog, public, swap_private AS $$
 DECLARE p public.players; a public.accounts; l public.listings; active jsonb; history jsonb; next_cursor jsonb;
@@ -350,7 +351,7 @@ BEGIN
   END IF;
   stats := swap_private.pool_stats(p.region);
   END IF;
-  reset_at := CASE WHEN p.quota_reset_at>now() THEN p.quota_reset_at ELSE swap_private.reset_at(p.server) END;
+  reset_at := CASE WHEN p.quota_reset_at>now() THEN p.quota_reset_at ELSE now() END;
   RETURN jsonb_build_object('me',jsonb_build_object('accountId',actor,'accountType',a.account_type,'uid',p.uid,
       'uidMasked',swap_private.mask_uid(p.uid),'server',p.server,'region',p.region,'creditLevel',CASE WHEN p.credit>=90 THEN 5 WHEN p.credit>=60 THEN 4 WHEN p.credit>=30 THEN 2 ELSE 1 END,
       'completedCount',p.completed_count,'cooldownUntil',swap_private.ms(p.cooldown_until)),
@@ -434,6 +435,9 @@ BEGIN
 END $$;
 
 -- 用持久化对象索引按需唤醒数据库；保留 10 分钟自动确认与所有信用结算规则。
+-- 发布与重新匹配冷却按账号类型区分：B站授权账号 1 分钟，匿名账号 20 分钟。
+-- 匿名账号与 B站授权账号均可匹配；撤回需求和成功结算立即恢复额度。
+-- 冷却直接按新账号规则计算截止时间，不需要旧数据过渡或回填。
 CREATE FUNCTION public.swap_dispatch(p_auth_id text, p_action text, p_data jsonb DEFAULT '{}', p_custom_id text DEFAULT NULL,
   p_request_key text DEFAULT NULL, p_fingerprint text DEFAULT NULL, p_rate_keys text[] DEFAULT '{}') RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, swap_private AS $$
@@ -530,11 +534,13 @@ BEGIN
         UPDATE public.listings SET give=p_data->'give',want=ARRAY(SELECT value::integer FROM jsonb_array_elements_text(p_data->'want')),
           note=p_data->'note',version=version+1,updated_at=now() WHERE id=l.id RETURNING * INTO l;
       ELSIF p_action='withdraw' THEN
+        -- 撤回需求立即恢复本账号额度；已有匹配、信用处罚不变。
+        UPDATE public.players SET quota_reset_at=NULL WHERE account_id=actor;
         UPDATE public.listings SET status='closed',give='{}',want='{}',version=version+1,updated_at=now() WHERE id=l.id RETURNING * INTO l;
       END IF;
     END IF;
     IF p_action IN ('publish','rematch') THEN
-      quota_until := swap_private.reset_at(p.server);
+      quota_until := now()+CASE WHEN a.account_type='bili' THEN interval '1 minute' ELSE interval '20 minutes' END;
       UPDATE public.players SET quota_reset_at=quota_until WHERE account_id=actor;
       created := swap_private.scan(actor,l.id);
       SELECT * INTO STRICT l FROM public.listings WHERE id=l.id;

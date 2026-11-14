@@ -279,7 +279,7 @@ src/
 assets/{cards,fonts,icons,recognition}/
 backend/                    # 本地开发服务与云函数公共代码
 cloudfunctions/{swap-api,swap-maintenance}/
-cloudbase/migrations/20261114050000_init_swap.sql   # 唯一初始化迁移
+cloudbase/migrations/20261115010000_init_swap.sql   # 唯一初始化迁移（含账号类型冷却）
 scripts/                    # 资源构建、后端构建 / 打包 / 部署、识别评估
 tests/                      # box-code, trade-notes, exchange-site, toy-sdk-loader, backend-*, maintenance-scheduler
 ```
