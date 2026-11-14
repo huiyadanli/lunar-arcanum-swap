@@ -7,7 +7,7 @@ import { dev } from './dev.js';
 import { createQrDataUrl } from '../lib/qrcode.js';
 import { biliToyPageUrl } from '../platform/exchange-site.js';
 
-const APP_ONLY = ['saveImageToAlbum', 'share', 'closeBrowser', 'onContainerChange', 'getContainerState', 'setContainerMode'];
+const APP_ONLY = ['saveImageToAlbum', 'share', 'sharePicture', 'closeBrowser', 'onContainerChange', 'getContainerState', 'setContainerMode'];
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 const sdkError = (type, message) => Object.assign(new Error(`[ToySDK] ${message}`), { type });
 
@@ -61,7 +61,7 @@ export function createMockToy() {
     async getAuthorRelation() {
       await delay(200);
       requireLogin();
-      return { status: 'ok', data: { isFollowing: dev.following, isOldFan: false, hasFanMedal: false } };
+      return { status: 'ok', data: { isFollowing: dev.following, isAuthor: dev.isAuthor, isOldFan: false, hasFanMedal: false } };
     },
     async getAuthorProfile() {
       await delay(120);
@@ -82,12 +82,17 @@ export function createMockToy() {
       if (dev.env !== 'toy-app') throw sdkError('unsupported', 'share is app only');
       toyUi.notice(`share → /toy/<slug>/${path}`);
     },
+    async sharePicture({ base64Data }) {
+      if (dev.env !== 'toy-app') throw sdkError('unsupported', 'sharePicture is app only');
+      if (!base64Data) throw sdkError('invalid_param', 'image is required');
+      toyUi.notice('sharePicture → 交换名片图片分享面板');
+    },
     async saveImageToAlbum() {
       if (dev.env !== 'toy-app') throw sdkError('unsupported', 'app only');
       await delay(300);
       return { localPath: '/mock/album/exchange-card.png' };
     },
-    async getQrCode({ path = 'index.html', size = 320 } = {}) {
+    async getQrCode({ path = '', size = 320 } = {}) {
       const url = biliToyPageUrl(location.href, path) || biliToyPageUrl(import.meta.env.VITE_BILIBILI_TOY_URL, path);
       if (!url) throw sdkError('unsupported', '请配置 VITE_BILIBILI_TOY_URL 后预览真实的 Toy 二维码');
       return { base64: createQrDataUrl(url, size), url };

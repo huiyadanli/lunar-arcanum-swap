@@ -23,7 +23,7 @@ Toy JS SDK 为你的 Toy 页面提供与 B站 App / Web 环境交互的能力。
 判断当前环境是否支持指定能力。
 
 参数：
-- `ability`: string（必填）- 能力名称：navigate | saveImageToAlbum | share | getQrCode | closeBrowser | getUserProfile | getCloudStorage | setCloudStorage | removeCloudStorage | getAuthorProfile | getAuthorVideos | getAuthorRelation | getVideoUserActions | submitScore | getRankList | getMyRank | requestCamera | requestMicrophone | stopMedia | onContainerChange | getContainerState | setContainerMode | checkInputSafety | getSharedStorage | setSharedStorage | removeSharedStorage
+- `ability`: string（必填）- 能力名称：navigate | saveImageToAlbum | share | sharePicture | getQrCode | closeBrowser | getUserProfile | getCloudStorage | setCloudStorage | removeCloudStorage | getAuthorProfile | getAuthorVideos | getAuthorRelation | getVideoUserActions | submitScore | getRankList | getMyRank | requestCamera | requestMicrophone | stopMedia | onContainerChange | getContainerState | setContainerMode | checkInputSafety | getSharedStorage | setSharedStorage | removeSharedStorage
 
 返回值：`Promise<boolean>`
 
@@ -85,6 +85,24 @@ await toy.saveImageToAlbum({
 await toy.share({ path: 'result.html?score=100' })
 // 实际分享链接为 https://www.bilibili.com/toy/<当前slug>/result.html?score=100
 ```
+
+<!-- 图片分享补充：2026-11-14 对照线上 SDK 确认 sharePicture，后续更新能力清单时保留。 -->
+
+### toy.sharePicture(req)
+
+拉起 B站 App 的图片分享面板。与只分享 Toy 页面链接的 `share` 不同，此方法直接分享图片。
+
+- `url`: string（可选）- 非空的网络图片地址。
+- `base64Data`: string（可选）- 非空的 base64 图片数据，可传生成预览使用的完整 data URL。
+- 两者至少传一个；使用前调用 `toy.isSupport('sharePicture')`，Web 端不支持。
+
+返回值：`Promise<void>`，表示接口调用返回，不代表用户已完成分享。
+
+```js
+await toy.sharePicture({ base64Data: namecard.image.dataUrl })
+```
+
+SDK 来源：[线上 Toy SDK](https://s1.hdslb.com/bfs/seed/toy/app/sdk/toy-sdk.js)。
 
 ### toy.getQrCode(req)
 
@@ -158,6 +176,8 @@ const result = await toy.getAuthorVideos({
 ### toy.getAuthorRelation()
 
 获取当前访问用户与当前 Toy 作者的关注、老粉、粉丝勋章状态，以及当前是否正在对该作者进行包月充电。
+
+`status === 'ok'` 时，`data.isAuthor` 表示当前访问者是作者本人。作者不能关注自己，关注引导应在 `isAuthor === true` 时直接放行；`isFollowing` 缺失时不能按未关注处理。
 
 返回值：`Promise<AuthorRelationResp>`
 
@@ -479,6 +499,7 @@ if (passed) {
 | navigate | ✅ | ✅ |
 | saveImageToAlbum | ✅ | ❌ |
 | share | ✅ | ❌ |
+| sharePicture | ✅ | ❌ |
 | getQrCode | ✅ | ✅ |
 | closeBrowser | ✅ | ❌ |
 | getUserProfile | ✅ | ✅ |

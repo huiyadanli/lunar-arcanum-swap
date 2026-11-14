@@ -3,19 +3,19 @@ import assert from 'node:assert/strict';
 import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl } from '../src/platform/exchange-site.js';
 
 test('自部署保留目录并清理调试参数和当前路由', () => {
-  assert.equal(standaloneSiteUrl('https://swap.example/collection/index.html?mock=bili&token=private#/trade/123'), 'https://swap.example/collection/#/welcome');
-  assert.equal(standaloneSiteUrl('https://swap.example/collection/?env=toy-app#/box'), 'https://swap.example/collection/#/welcome');
+  assert.equal(standaloneSiteUrl('https://swap.example/collection/index.html?mock=bili&token=private#/trade/123'), 'https://swap.example/collection/');
+  assert.equal(standaloneSiteUrl('https://swap.example/collection/?env=toy-app#/box'), 'https://swap.example/collection/');
 });
 
 test('自部署可独立配置正式域名，不受当前预览地址影响', () => {
-  assert.equal(standaloneSiteUrl('http://localhost:5174/?mock=anon', 'https://cards.example/swap/'), 'https://cards.example/swap/#/welcome');
+  assert.equal(standaloneSiteUrl('http://localhost:5174/?mock=anon', 'https://cards.example/swap/'), 'https://cards.example/swap/');
   assert.throws(() => standaloneSiteUrl('https://swap.example/', 'javascript:alert(1)'));
   assert.throws(() => standaloneSiteUrl('https://swap.example/', 'https://user:password@swap.example/'));
 });
 
 test('Toy 页面始终解析到当前 Toy 根目录，与自部署链接不同', () => {
-  assert.equal(biliToyPageUrl('https://www.bilibili.com/toy/my-real-toy/pages/result.html?mock=anon'), 'https://www.bilibili.com/toy/my-real-toy/index.html#/welcome');
-  assert.equal(biliToyPageUrl('https://www.bilibili.com/toy/my-real-toy'), 'https://www.bilibili.com/toy/my-real-toy/index.html#/welcome');
+  assert.equal(biliToyPageUrl('https://www.bilibili.com/toy/my-real-toy/pages/result.html?mock=anon'), 'https://www.bilibili.com/toy/my-real-toy/');
+  assert.equal(biliToyPageUrl('https://www.bilibili.com/toy/my-real-toy'), 'https://www.bilibili.com/toy/my-real-toy/');
 });
 
 test('拒绝占位或跨平台链接，不把独立站或普通 B站页面当作 Toy', () => {

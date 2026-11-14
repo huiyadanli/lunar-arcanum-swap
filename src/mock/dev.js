@@ -8,6 +8,7 @@ const DEFAULTS = {
   env: 'standalone',     // 'toy-app' | 'toy-web' | 'standalone'
   loggedIn: true,        // Toy 环境中是否已登录 B站
   following: false,      // 是否已关注 UP主（模拟 getAuthorRelation）
+  isAuthor: false,       // 当前用户是否为作者本人（本人无需关注自己）
   instantMatch: 'random' // 发布时是否立即匹配：'random' | 'always' | 'never'
 };
 

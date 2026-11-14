@@ -15,7 +15,7 @@ import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selec
 import { hasWaitingCards, canStartTrade, matchStatus } from './lib/trade-state.js';
 import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote } from './lib/trade-notes.js';
 import { statePollDelay } from './lib/state-polling.js';
-import { platform, copyText } from './platform/index.js';
+import { platform, copyText, normalizeAvatarUrl } from './platform/index.js';
 import { api } from './api/index.js';
 import { ONLINE_BACKEND } from './config.js';
 import { dev, setDev } from './mock/dev.js';
@@ -71,7 +71,7 @@ function app() {
     counts: saved.counts || Array(CARD_COUNT).fill(0),
     wantOff: saved.wantOff || [],
     quick: saved.quick || { give: {}, want: [] },
-    profile: saved.profile || null,
+    profile: saved.profile ? { ...saved.profile, avatar: normalizeAvatarUrl(saved.profile.avatar) } : null,
     profileDeclined: !!saved.profileDeclined,
     anonTag: saved.anonTag || rid4(),
     session: saved.session ? { token: saved.session.token, accountType: saved.session.accountType } : null,
@@ -95,6 +95,7 @@ function app() {
     listing: null,
     matches: [],
     quotaLeft: 1,
+    quotaClock: Date.now(),
     resetAt: 0,
     completedCount: 0,
     poolStatsValue: { waiting: 0 },
@@ -113,6 +114,12 @@ function app() {
     accountType: 'anon',
     loginHint: false,
     loginHintClosed: false,
+    // B站授权弹层：'entry' 进入时（可关闭）| 'match' 匹配前（必须授权）| null
+    authGate: null,
+    authBusy: false,
+    followError: '',
+    avatarBroken: false,
+    _authResume: null,
     fanCards: [17, 18, 21, 6, 22],
     boxCode: '',
     boxImportInput: '',
@@ -183,6 +190,8 @@ function app() {
       } catch (error) {
         this.showApiError(error);
       }
+      // B站环境（SDK 可用）进入即请求授权；这里可以先关掉，到匹配阶段仍会强制要求。
+      if (this.needsBiliAuth) this.authGate = 'entry';
       this.platform.onSafeArea((sa) => document.documentElement.style.setProperty('--safe-bottom', `${sa.bottom}px`));
 
       // 持久化 + 云同步（B站用户）：JSON.stringify 会读取所有嵌套字段，从而建立响应式依赖
@@ -205,6 +214,10 @@ function app() {
       this.parseRoute(false);
       try { await this.refresh(); } catch (error) { this.showApiError(error); }
       this.ready = true;
+      // 倒计时只更新本地时钟，不请求数据库；到期刷新由 pollState 安排。
+      this._quotaClockTimer = setInterval(() => {
+        if (!this.quotaLeft && document.visibilityState === 'visible') this.quotaClock = Date.now();
+      }, 1000);
       this.pollState();
     },
 
@@ -294,14 +307,60 @@ function app() {
       }
     },
 
-    async useBiliProfile() {
-      const p = await this.platform.getProfile();
-      if (p) {
+    /** SDK 可用（在 B站 Toy 内）但还没拿到 B站头像昵称授权。 */
+    get needsBiliAuth() {
+      return this.platform.env !== 'standalone' && this.platform.can('profile') && !this.profile;
+    },
+
+    /** 匹配阶段的授权闸门：已授权或 SDK 不可用时直接放行；否则弹出必选授权，授权后继续 resume。 */
+    requireBiliAuth(resume) {
+      if (!this.needsBiliAuth) return true;
+      this._authResume = resume || null;
+      this.authGate = 'match';
+      return false;
+    },
+
+    closeAuthGate() {
+      if (this.authGate === 'match') this._authResume = null;
+      this.authGate = null;
+    },
+
+    /** 必须由用户点击触发（getUserProfile 首次调用需要用户手势）。 */
+    async authorizeBili() {
+      if (this.authBusy) return false;
+      this.authBusy = true;
+      try {
+        const p = await this.platform.getProfile();
+        if (!p) {
+          this.profileDeclined = true;
+          this.toast(this.t('platform.authDenied'), { error: true });
+          return false;
+        }
+        this.profileDeclined = false;
+        this.avatarBroken = false;
         this.profile = { nickname: p.nickname, avatar: p.avatar };
+        // 授权过程里用户可能刚完成 B站登录：重新建立身份，否则仍按匿名账号展示（头像不会显示）。
+        if (this.accountType !== 'bili') {
+          this.session = null;
+          try {
+            await this.setupIdentity();
+            this.loginHint = this.accountType !== 'bili';
+            await this.refresh(true);
+          } catch (error) { this.showApiError(error); }
+        }
         this.toast(this.t('welcome.biliLinked'));
-      } else {
-        this.profileDeclined = true;
+        const resume = this._authResume;
+        this._authResume = null;
+        this.authGate = null;
+        if (resume) resume();
+        return true;
+      } finally {
+        this.authBusy = false;
       }
+    },
+
+    async useBiliProfile() {
+      await this.authorizeBili();
     },
 
     resolveDialog(value) {
@@ -331,6 +390,10 @@ function app() {
       const h = Math.floor(ms / 3600e3);
       const m = Math.floor((ms % 3600e3) / 60e3);
       return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+    },
+    get quotaTimeLeft() {
+      const seconds = Math.max(0, Math.ceil((this.resetAt - this.quotaClock) / 1000));
+      return `${Math.floor(seconds / 60)}m ${String(seconds % 60).padStart(2, '0')}s`;
     },
     dateStr(ts) {
       return new Intl.DateTimeFormat(this.lang, { month: 'numeric', day: 'numeric' }).format(ts);
@@ -641,6 +704,7 @@ function app() {
     },
     async doPublish() {
       if (this.busy) return;
+      if (!this.requireBiliAuth(() => this.doPublish())) return;
       const note = TRADE_NOTE_PRESETS.includes(this.note.preset) ? { preset: this.note.preset } : null;
       this.busy = true;
       try {
@@ -691,6 +755,7 @@ function app() {
         const background = !fresh && this.ready;
         const s = await api.getState(this.serverKey, { light: background, background });
         Object.assign(this, { listing: s.listing, matches: s.matches, quotaLeft: s.quotaLeft, resetAt: s.resetAt, completedCount: s.completedCount });
+        this.quotaClock = Date.now();
         if (ONLINE_BACKEND) {
           // 身份、额度和匹配以服务端为准；完整 Box 仍按原有方式保存在本机或 Toy 云存储。
           this.uid = s.me.uid || '';
@@ -703,7 +768,8 @@ function app() {
     },
     pollState() {
       clearTimeout(this._pollTimer);
-      const delay = statePollDelay({ listing: this.listing, matches: this.matches, visible: document.visibilityState === 'visible' });
+      const delay = statePollDelay({ listing: this.listing, matches: this.matches, quotaLeft: this.quotaLeft,
+        resetAt: this.resetAt, visible: document.visibilityState === 'visible' });
       if (delay === null) return;
       this._pollTimer = setTimeout(async () => {
         if (document.visibilityState === 'visible' && !this.busy) {
@@ -750,6 +816,7 @@ function app() {
     },
     async rematch() {
       if (!this.quotaLeft || this.busy) return;
+      if (!this.requireBiliAuth(() => this.rematch())) return;
       this.busy = true;
       try {
         const r = await api.rematch(this.serverKey);
@@ -765,7 +832,7 @@ function app() {
       }
     },
     async invite() {
-      const r = await this.platform.share({ path: 'index.html#/welcome', title: this.t('app.name'), text: this.t('app.tagline') });
+      const r = await this.platform.share({ title: this.t('app.name'), text: this.t('app.tagline') });
       if (r === 'copied') this.toast(this.t('common.copied'));
     },
 
@@ -778,11 +845,13 @@ function app() {
         this.busy = false;
         if (f === false) {
           this.sheetData = { matchId: m.id };
+          this.followError = '';
           this.sheet = 'follow';
           if (!this.authorInfo) this.platform.author.profile().then((p) => (this.authorInfo = p));
           return;
         }
         this.followCache = f;
+        if (f === null) this.toast(this.t('follow.checkSkipped'));
       }
       await this.revealUid(m.id);
     },
@@ -802,8 +871,21 @@ function app() {
       }
     },
     async goFollow() {
-      await this.platform.author.openSpace();
-      await this.recheckFollow(true);
+      this.followError = '';
+      try {
+        if (!this.platform.author.isAuthor) await this.platform.author.openSpace();
+        await this.recheckFollow(true);
+      } catch (error) {
+        this.showFollowError(error);
+      }
+    },
+    showFollowError(error) {
+      const key = error?.cause === 'author_not_configured' ? 'follow.notConfigured'
+        : error?.cause === 'space_popup_blocked' ? 'follow.popupBlocked'
+        : error?.kind === 'unsupported' ? 'follow.openUnsupported' : 'follow.openFailed';
+      // 抽屉里直接给出原因：只弹 Toast 容易被顶部容器栏遮住，用户会以为点击没反应。
+      this.followError = this.t(key);
+      this.toast(this.followError, { error: true, ms: 4200 });
     },
     async recheckFollow(silent = false) {
       const f = await this.platform.author.isFollowing();
@@ -811,16 +893,23 @@ function app() {
         if (!silent) this.toast(this.t('follow.notYet'));
         return;
       }
-      this.followCache = true;
+      this.followCache = f;
+      if (f === null) this.toast(this.t('follow.checkSkipped'));
       const id = this.sheetData.matchId;
       this.sheet = null;
       if (id) await this.revealUid(id);
     },
     async followFromMe() {
+      if (this.platform.author.isAuthor) return this.toast(this.t('follow.authorSelf'));
       if (this.followCache === true) return;
-      await this.platform.author.openSpace();
-      const f = await this.platform.author.isFollowing();
-      if (f !== false) this.followCache = true;
+      try {
+        await this.platform.author.openSpace();
+        const f = await this.platform.author.isFollowing();
+        this.followCache = f;
+        if (f === null) this.toast(this.t('follow.checkFailed'));
+      } catch (error) {
+        this.showFollowError(error);
+      }
     },
     tradeMsg(m) {
       const gives = m.pairs.map((p) => this.cardName(p.give));
@@ -910,12 +999,15 @@ function app() {
       return (this.lang === 'en' ? 'Traveler·' : '旅人·') + this.anonTag;
     },
     async openQr() {
-      this.qrSrc = await this.platform.qrcode({ path: 'index.html#/box' });
+      this.qrSrc = await this.platform.qrcode();
       if (!this.qrSrc) return this.toast(this.t('namecard.toyUnavailable'));
       this.sheet = 'qr';
     },
 
     // ---------- 交换名片：从当前选牌或已发布需求生成独立快照 ----------
+    get namecardUsesSdk() {
+      return this.platform.env !== 'standalone';
+    },
     get namecardSelection() {
       return getNamecardSelection(this);
     },
@@ -982,14 +1074,21 @@ function app() {
       if (!current?.image || current.generating || current.saving) return;
       current.saving = true;
       try {
+        if (this.namecardUsesSdk) {
+          await this.platform.shareImage({ dataUrl: current.image.dataUrl });
+          this.toast(this.t('namecard.shareOpened'));
+          return;
+        }
         const date = new Intl.DateTimeFormat('sv-SE', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Shanghai' }).format(current.createdAt);
         const result = await this.platform.saveImage({
           dataUrl: current.image.dataUrl,
           name: `lunar-swap-${current.site.kind}-${date}.${current.image.extension}`,
         });
         this.toast(this.t(result === 'album' ? 'namecard.savedAlbum' : 'namecard.savedDownload'));
-      } catch {
-        this.toast(this.t('namecard.saveFailed'));
+      } catch (error) {
+        this.toast(this.t(this.namecardUsesSdk
+          ? error?.kind === 'unsupported' ? 'namecard.shareUnsupported' : 'namecard.shareFailed'
+          : 'namecard.saveFailed'));
       } finally {
         current.saving = false;
       }
@@ -1264,7 +1363,7 @@ function app() {
       if (ONLINE_BACKEND) return;
       api.dev.resetQuota();
       await this.refresh();
-      this.toast('已重置今日次数');
+      this.toast('已清除发布冷却');
     },
   };
 }

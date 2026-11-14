@@ -36,6 +36,17 @@
   </template>
 </div>
 
+<!-- B站授权：进入时可关闭（entry），匹配前必须授权（match） -->
+<div class="auth-backdrop" x-show="authGate" x-cloak role="dialog" aria-modal="true" :aria-label="t('platform.authTitle')">
+  <div class="auth-dialog">
+    <span class="auth-badge"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bilibili'"></use></svg></span>
+    <b x-text="t('platform.authTitle')"></b>
+    <p x-text="t(authGate === 'match' ? 'platform.authMatchBody' : 'platform.authBody')"></p>
+    <button class="btn btn-primary btn-block" :aria-busy="authBusy" @click="authorizeBili()" x-text="t('platform.authBtn')"></button>
+    <button class="link-btn" @click="closeAuthGate()" x-text="t(authGate === 'match' ? 'platform.authCancel' : 'platform.authLater')"></button>
+  </div>
+</div>
+
 <!-- 模拟：B站 平台的用户资料授权弹窗（getUserProfile 首次调用） -->
 <div class="pf-backdrop" x-show="platformDialog === 'profile'" x-cloak>
   <div class="pf-dialog">

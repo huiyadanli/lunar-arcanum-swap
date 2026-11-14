@@ -52,6 +52,7 @@
       <span class="bili-dot"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bilibili'"></use></svg></span><span x-text="t('welcome.useBili')"></span>
     </button>
     <p class="welcome-note" x-show="accountType === 'bili' && profile">
+      <img class="avatar-img avatar-inline" x-show="profile?.avatar && !avatarBroken" :src="profile?.avatar" alt="" referrerpolicy="no-referrer" @error="avatarBroken = true">
       <svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#check'"></use></svg> <span x-text="profile?.nickname"></span>
     </p>
 

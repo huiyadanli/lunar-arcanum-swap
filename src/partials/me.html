@@ -7,7 +7,10 @@
     <div class="account-top">
       <div class="avatar" :class="{ bili: accountType === 'bili' }">
         <template x-if="accountType === 'bili' && profile">
-          <span class="avatar-letter" x-text="profile.nickname.slice(0, 1)"></span>
+          <span class="avatar-fill">
+            <img class="avatar-img" x-show="profile.avatar && !avatarBroken" :src="profile.avatar" alt="" referrerpolicy="no-referrer" @error="avatarBroken = true">
+            <span class="avatar-letter" x-show="!profile.avatar || avatarBroken" x-text="(profile.nickname || '?').slice(0, 1)"></span>
+          </span>
         </template>
         <template x-if="!(accountType === 'bili' && profile)">
           <svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.35)" class="moon-lit"/></svg>
@@ -49,7 +52,7 @@
   <!-- B站专属入口 -->
   <div class="list" x-show="accountType === 'bili'">
     <button class="list-row" @click="followFromMe()">
-      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#' + (followCache === true ? 'check' : 'heart')"></use></svg></span><span x-text="followCache === true ? t('follow.followed') : t('follow.row')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
+      <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#' + (followCache === true ? 'check' : 'heart')"></use></svg></span><span x-text="platform.author.isAuthor ? t('follow.authorSelf') : followCache === true ? t('follow.followed') : t('follow.row')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>
     </button>
     <button class="list-row" x-show="wide" @click="openQr()">
       <span class="list-icon"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#qr'"></use></svg></span><span x-text="t('me.qr')"></span><span class="chev"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#chevron-right'"></use></svg></span>

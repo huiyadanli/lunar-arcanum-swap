@@ -385,6 +385,7 @@ textarea:focus, .text-input:focus { border-color: var(--arcane); }
 .avatar { position: relative; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: #141A3A; border: 1px solid var(--border-strong); flex: none; }
 .avatar svg { width: 100%; height: 100%; }
 .avatar.lg { width: 68px; height: 68px; }
+.avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
 .avatar-letter { font-size: 22px; font-weight: 700; color: var(--moon-gold); }
 .avatar.bili { border-color: rgba(251, 114, 153, 0.6); }
 .avatar-tag { position: absolute; right: -2px; bottom: -2px; width: 18px; height: 18px; border-radius: 50%; background: var(--bili-pink); color: #fff; font-size: 11px; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--bg-1); }
@@ -404,3 +405,5 @@ textarea:focus, .text-input:focus { border-color: var(--arcane); }
 
 /* 流畅档：去掉高成本的毛玻璃 */
 [data-fx="lite"] .nav, [data-fx="off"] .nav { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(10, 13, 30, 0.97); }
+.avatar-fill { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; display: grid; place-items: center; }
+.avatar-inline { width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 4px; }

@@ -1,10 +1,11 @@
 // 模拟后端（设计文档第 11、13 节）。数据存在 localStorage，接口形状与正式 API 草案一致：
 //  - 主动扫描（发布 / 重新匹配）最多 3 对，被动匹配不限
 //  - 匹配详情在 reveal 之前只返回 uidMasked
-//  - 每日 1 次主动发布 / 重新匹配，按各服 04:00 刷新；主动或自动确认成功后立即恢复次数
+//  - 主动发布 / 重新匹配共用十分钟冷却；撤回需求、主动或自动确认成功后立即恢复次数
 
 import { storage } from '../lib/storage.js';
-import { maskUid, nextResetAt } from '../lib/uid.js';
+import { maskUid } from '../lib/uid.js';
+import { publishQuota } from '../lib/publish-cooldown.js';
 import { TRADE_NOTE_PRESETS, isPresetNote } from '../lib/trade-notes.js';
 import { dev } from './dev.js';
 
@@ -61,9 +62,8 @@ function save(db) {
   storage.set('mockdb', db);
 }
 
-function quotaLeft(db, server) {
-  const lastReset = nextResetAt(server) - 24 * 3600e3;
-  return db.quotaUsedAt >= lastReset ? 0 : 1;
+function quotaLeft(db) {
+  return publishQuota(db.quotaUsedAt).quotaLeft;
 }
 
 /** 对外视图：未 reveal 或匹配已结束时不返回完整 UID（设计文档 5.4）。 */
@@ -133,8 +133,7 @@ export const api = {
     return {
       listing: db.listing,
       matches: db.matches.map(view),
-      quotaLeft: quotaLeft(db, server),
-      resetAt: nextResetAt(server),
+      ...publishQuota(db.quotaUsedAt),
       completedCount: db.completedCount,
     };
   },
@@ -143,7 +142,7 @@ export const api = {
   async publish({ give, want, note, server, mode }) {
     await delay();
     const db = load();
-    if (!quotaLeft(db, server)) throw new ApiError('DAILY_LIMIT', { retryAt: nextResetAt(server) });
+    if (!quotaLeft(db)) throw new ApiError('DAILY_LIMIT', { retryAt: publishQuota(db.quotaUsedAt).resetAt });
     if (db.listing) throw new ApiError('LISTING_EXISTS');
     if (db.matches.some(m => ['matched', 'confirming'].includes(m.status))) throw new ApiError('ACTIVE_EXCHANGE');
     if (note != null && !isPresetNote(note)) throw new ApiError('NOTE_REJECTED');
@@ -176,14 +175,15 @@ export const api = {
     await delay(250);
     const db = load();
     db.listing = null;
+    db.quotaUsedAt = 0;
     save(db);
   },
 
-  /** POST /listings/current/rematch —— 消耗当日次数，再做一次主动扫描。 */
+  /** POST /listings/current/rematch —— 开始十分钟冷却，再做一次主动扫描。 */
   async rematch(server) {
     await delay();
     const db = load();
-    if (!quotaLeft(db, server)) throw new ApiError('DAILY_LIMIT', { retryAt: nextResetAt(server) });
+    if (!quotaLeft(db)) throw new ApiError('DAILY_LIMIT', { retryAt: publishQuota(db.quotaUsedAt).resetAt });
     if (!db.listing) throw new ApiError('NO_LISTING');
     db.quotaUsedAt = Date.now();
     const m = dev.instantMatch === 'never' ? null : makeMatch(db, 'me', ACTIVE_SCAN_MAX);

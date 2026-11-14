@@ -71,7 +71,7 @@
           </template>
         </div>
         <p class="hint" id="trade-time-hint" x-text="t('publish.noteHint')"></p>
-        <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: timeLeft(resetAt) })"></p>
+        <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: quotaTimeLeft })"></p>
         <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft" :aria-busy="busy" @click="doPublish()"
                 x-text="t('publish.go')"></button>
       </div>
@@ -90,6 +90,7 @@
         <h3 class="sheet-title center" x-text="t('follow.title')"></h3>
         <p class="hint center" x-text="t('follow.desc')"></p>
         <button class="btn btn-primary btn-block btn-shine" @click="goFollow()"><span x-text="t('follow.go')"></span><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#arrow-right'"></use></svg></button>
+        <p class="hint is-bad center" role="alert" x-show="followError" x-text="followError"></p>
         <button class="btn btn-ghost btn-block" @click="recheckFollow()" x-text="t('follow.already')"></button>
       </div>
     </template>
@@ -347,7 +348,7 @@
           <button class="btn btn-ghost sm" @click="devIncoming()">模拟：有人匹配到我</button>
           <button class="btn btn-ghost sm" @click="devPartner('reveal')">模拟：对方开始交换</button>
           <button class="btn btn-ghost sm" @click="devPartner('confirm')">模拟：对方确认完成</button>
-          <button class="btn btn-ghost sm" @click="devResetQuota()">重置今日次数</button>
+          <button class="btn btn-ghost sm" @click="devResetQuota()">清除发布冷却</button>
           <button class="btn btn-ghost sm danger" @click="clearAll()">清空全部数据</button>
         </div>
       </div>
@@ -392,7 +393,7 @@
             </section>
           </div>
           <div class="namecard-options">
-            <p class="namecard-intro" x-text="t('namecard.intro')"></p>
+            <p class="namecard-intro" x-text="t(namecardUsesSdk ? 'namecard.shareIntro' : 'namecard.intro')"></p>
             <div class="namecard-source"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#check'"></use></svg><span x-text="t(namecard.source === 'listing' ? 'namecard.publishedSource' : 'namecard.draftSource')"></span></div>
             <label class="check-row namecard-uid">
               <input type="checkbox" x-model="namecard.includeUid" @change="generateNamecard()" :disabled="namecard.generating || namecard.saving">
@@ -413,8 +414,8 @@
         </div>
         </div>
         <div class="namecard-actions">
-          <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#download'"></use></svg><span x-text="t(namecard.saving ? 'namecard.saving' : 'namecard.save')"></span></button>
-          <p class="hint center" x-show="namecard.image" x-text="t('namecard.saveHint', { size: Math.ceil((namecard.image?.bytes || 0) / 1024) })"></p>
+          <button class="btn btn-primary btn-block btn-shine" @click="saveNamecard()" :disabled="!namecard.image || namecard.generating || namecard.saving"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + (namecardUsesSdk ? '#import' : '#download')"></use></svg><span x-text="t(namecardUsesSdk ? (namecard.saving ? 'namecard.sharing' : 'namecard.share') : (namecard.saving ? 'namecard.saving' : 'namecard.save'))"></span></button>
+          <p class="hint center" x-show="namecard.image" x-text="t(namecardUsesSdk ? 'namecard.shareHint' : 'namecard.saveHint', { size: Math.ceil((namecard.image?.bytes || 0) / 1024) })"></p>
         </div>
       </div>
     </div>

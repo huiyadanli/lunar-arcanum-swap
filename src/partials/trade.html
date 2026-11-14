@@ -79,7 +79,7 @@
         <button class="btn btn-ghost sm" @click="go('box')" x-text="t('trade.edit')"></button>
         <button class="btn btn-ghost sm" :disabled="busy" @click="withdraw()" x-text="t('trade.withdraw')"></button>
         <button class="btn btn-ghost sm" :disabled="!hasWaitingListing || !quotaLeft || busy" @click="rematch()"
-                x-text="quotaLeft ? t('trade.rematchLeft', { n: quotaLeft }) : t('trade.rematch') + ' · ' + t('trade.resetIn', { time: timeLeft(resetAt) })"></button>
+                x-text="quotaLeft ? t('trade.rematchLeft', { n: quotaLeft }) : t('trade.rematch') + ' · ' + t('trade.resetIn', { time: quotaTimeLeft })"></button>
       </div>
       <!-- 通知：独立站 Web Push；Toy 内提示回访 + 邀请 -->
       <div class="notify-row" x-show="platform.env === 'standalone'">

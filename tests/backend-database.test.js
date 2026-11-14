@@ -86,12 +86,51 @@ describe('PostgreSQL 真实事务与业务约束', { concurrency: false }, () =>
 
   it('账号配额独立；修改相同服务器 UID 不能清空已用次数', async () => {
     await bind('alice');
-    await publish('alice', { 17: 1 }, [1]); await call('alice', 'withdraw');
+    await publish('alice', { 17: 1 }, [1]);
+    // 单独关闭需求以测试修改 UID；主动撤回现在会按规则恢复额度。
+    await db.exec("UPDATE public.listings SET status='closed' WHERE account_id='anon:alice'");
     await bind('alice', '812345679');
     assert.equal((await state('alice')).quota.left, 0);
     await bind('bob'); assert.equal((await state('bob')).quota.left, 1);
     await db.exec("UPDATE public.players SET quota_reset_at=now()-interval '1 second' WHERE account_id='anon:alice'");
     assert.equal((await state('alice')).quota.left, 1);
+  });
+
+  it('发布与重新匹配共用十分钟冷却，到期无需维护即可再次使用', async () => {
+    await bind('alice');
+    const started = Date.now();
+    await publish('alice', { 17: 1 }, [1]);
+    const first = await state('alice');
+    assert.ok(first.quota.resetAt >= started + 600000);
+    assert.ok(first.quota.resetAt <= Date.now() + 600000);
+    await assert.rejects(call('alice', 'rematch'), /DAILY_LIMIT/);
+    await call('alice', 'edit', { give: { 17: 2 }, want: [1], note: null, version: first.listing.version });
+    assert.equal((await state('alice')).quota.resetAt, first.quota.resetAt);
+    await db.exec("UPDATE public.players SET quota_reset_at=now()-interval '1 second' WHERE account_id='anon:alice'");
+    assert.equal((await state('alice')).quota.left, 1);
+    const rematchedAt = Date.now();
+    await call('alice', 'rematch');
+    const second = await state('alice');
+    assert.equal(second.quota.left, 0);
+    assert.ok(second.quota.resetAt >= rematchedAt + 600000);
+    assert.ok(second.quota.resetAt <= Date.now() + 600000);
+  });
+
+  it('撤回立即恢复额度，允许重发；旧撤回重放不会清除新一轮冷却', async () => {
+    await bind('alice'); await bind('bob');
+    await publish('alice', { 17: 1 }, [1]);
+    await publish('bob', { 18: 1 }, [2]);
+    const key = randomUUID();
+    await call('alice', 'withdraw', {}, key);
+    assert.equal((await state('alice')).quota.left, 1);
+    assert.equal((await state('bob')).quota.left, 0);
+    await publish('alice', { 17: 1 }, [1]);
+    const republished = await state('alice');
+    await call('alice', 'withdraw', {}, key);
+    const replayed = await state('alice');
+    assert.equal(replayed.quota.left, 0);
+    assert.equal(replayed.quota.resetAt, republished.quota.resetAt);
+    assert.ok(replayed.listing);
   });
 
   it('同 UID 的第三方没有查看、确认或举报别人匹配的权限', async () => {

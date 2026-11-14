@@ -43,12 +43,12 @@ async function withBackoff(fn) {
 }
 
 const FEATURE_ABILITY = {
-  share: 'share', saveImage: 'saveImageToAlbum', qrcode: 'getQrCode', cloud: 'getCloudStorage',
+  share: 'share', shareImage: 'sharePicture', saveImage: 'saveImageToAlbum', qrcode: 'getQrCode', cloud: 'getCloudStorage',
   profile: 'getUserProfile', inputSafety: 'checkInputSafety', follow: 'getAuthorRelation',
   container: 'onContainerChange',
 };
 
-const AUTHOR_MID = '0'; // 正式版由 /config 的 authorMid 下发（设计文档 16.2 待提供）
+const AUTHOR_MID = '0'; // 正式版由 /config 的 authorMid 下发（服务端 SWAP_AUTHOR_MID 已配置）
 
 export const platform = {
   env: 'standalone',
@@ -66,6 +66,7 @@ export const platform = {
       toy = window.toy = createMockToy();
     }
     this.features = {};
+    this.author.isAuthor = false;
     if (!toy) {
       this.env = 'standalone';
     } else {
@@ -74,10 +75,10 @@ export const platform = {
     }
     // 独立站的浏览器替代能力
     if (this.env === 'standalone') {
-      this.features = { share: true, saveImage: true, qrcode: false, cloud: false, profile: false, inputSafety: false, follow: false, container: false };
+      this.features = { share: true, shareImage: false, saveImage: true, qrcode: false, cloud: false, profile: false, inputSafety: false, follow: false, container: false };
     } else {
       this.features.share = true;     // toy-web 没有原生分享，但有 navigator.share / 复制链接兜底
-      this.features.saveImage = true; // App 内相册，其他环境下载
+      // App 内相册；SDK 激活时保留实际支持状态，只有独立站使用下载。
     }
     return this;
   },
@@ -113,7 +114,9 @@ export const platform = {
   async getProfile() {
     if (!this.can('profile')) return null;
     try {
-      return await window.toy.getUserProfile();
+      const p = await window.toy.getUserProfile();
+      if (!p) return null;
+      return { ...p, avatar: normalizeAvatarUrl(p.avatar) };
     } catch {
       return null;
     }
@@ -131,12 +134,12 @@ export const platform = {
   },
 
   /** toy.share → navigator.share → 复制链接。返回 'shared' | 'copied' | 'cancelled' */
-  async share({ path = 'index.html', title, text }) {
+  async share({ title, text } = {}) {
     if (this.env === 'toy-app' && this.features.share) {
-      await window.toy.share({ path });
+      await window.toy.share();
       return 'shared';
     }
-    const url = new URL(path, location.href).toString();
+    const url = biliToyPageUrl(location.href) || standaloneSiteUrl(location.href, import.meta.env.VITE_PUBLIC_SITE_URL || '');
     if (navigator.share) {
       try {
         await navigator.share({ title, text, url });
@@ -149,13 +152,31 @@ export const platform = {
     return 'copied';
   },
 
-  /** App 内存相册，其他环境走 <a download>。 */
+  /** SDK 激活时直接分享图片，不用只分享 Toy 链接的 toy.share，也不回退到下载。 */
+  async shareImage({ dataUrl }) {
+    if (this.env === 'standalone' || !this.can('shareImage') || typeof window.toy?.sharePicture !== 'function') {
+      throw new PlatformError('unsupported', 'share_picture_unavailable');
+    }
+    try {
+      await window.toy.sharePicture({ base64Data: dataUrl });
+      return 'shared';
+    } catch (error) {
+      throw classify(error);
+    }
+  },
+
+  /** App 内存相册，只有独立站走 <a download>；SDK 失败不触发下载。 */
   async saveImage({ dataUrl, name = 'image.png' }) {
-    if (this.env === 'toy-app' && !window.toy?.__mock) {
+    if (this.env !== 'standalone') {
+      if (!this.can('saveImage') || typeof window.toy?.saveImageToAlbum !== 'function') {
+        throw new PlatformError('unsupported', 'save_image_unavailable');
+      }
       try {
         await window.toy.saveImageToAlbum({ base64Data: dataUrl });
         return 'album';
-      } catch { /* fall through to download */ }
+      } catch (error) {
+        throw classify(error);
+      }
     }
     // Blob URL 避免大体积 data URL 触发浏览器导航长度限制；同步创建以保留用户手势。
     const comma = dataUrl.indexOf(',');
@@ -175,10 +196,10 @@ export const platform = {
     return 'download';
   },
 
-  async qrcode({ path } = {}) {
+  async qrcode() {
     if (!this.can('qrcode')) return null;
     try {
-      return (await window.toy.getQrCode({ path })).base64;
+      return (await window.toy.getQrCode()).base64;
     } catch {
       return null;
     }
@@ -190,27 +211,31 @@ export const platform = {
       const url = standaloneSiteUrl(location.href, import.meta.env.VITE_PUBLIC_SITE_URL || '');
       return { kind: 'standalone', url, qr: createQrDataUrl(url), source: 'local' };
     }
-    const path = 'index.html#/welcome';
     if (this.can('qrcode')) {
       try {
-        const result = await window.toy.getQrCode({ path, size: 320 });
+        const result = await window.toy.getQrCode({ size: 320 });
         if (isBiliToyUrl(result.url) && /^data:image\/png;base64,/.test(result.base64)) {
           return { kind: 'bili', url: result.url, qr: result.base64, source: 'sdk', mock: !!window.toy.__mock };
         }
       } catch { /* 平台暂不可用时，仍只允许回退到真实的 B站 Toy 地址。 */ }
     }
-    const url = biliToyPageUrl(location.href, path) || biliToyPageUrl(import.meta.env.VITE_BILIBILI_TOY_URL, path);
+    const url = biliToyPageUrl(location.href) || biliToyPageUrl(import.meta.env.VITE_BILIBILI_TOY_URL);
     if (!url) throw new PlatformError('unsupported', 'toy_url_unavailable');
     return { kind: 'bili', url, qr: createQrDataUrl(url), source: 'local', mock: !!window.toy?.__mock };
   },
 
   author: {
-    /** true | false | null（null = 无法判断，调用方应放行，设计文档 5.5） */
+    isAuthor: false,
+    /** true | false | null（作者本人也返回 true；null = 无法判断，调用方应放行，设计文档 5.5） */
     async isFollowing() {
       if (!platform.can('follow')) return null;
       try {
         const r = await window.toy.getAuthorRelation();
-        return r?.status === 'ok' ? !!r.data?.isFollowing : null;
+        if (r?.status !== 'ok') return null;
+        this.isAuthor = r.data?.isAuthor === true;
+        if (this.isAuthor) return true;
+        // 缺失或格式异常不能当成“未关注”，否则作者或旧 SDK 会被误拦截。
+        return typeof r.data?.isFollowing === 'boolean' ? r.data.isFollowing : null;
       } catch {
         return null;
       }
@@ -226,9 +251,22 @@ export const platform = {
     },
     /** 必须在用户手势中调用。 */
     async openSpace() {
-      if (ONLINE_BACKEND && (!platform.authorMid || platform.authorMid === '0')) throw new PlatformError('unsupported', 'author_not_configured');
-      if (platform.env !== 'standalone' && window.toy) return window.toy.navigate({ type: 'space', id: platform.authorMid });
-      window.open(`https://space.bilibili.com/${platform.authorMid}`, '_blank', 'noopener');
+      const id = String(platform.authorMid || '').trim();
+      if (!/^[1-9]\d*$/.test(id) && !window.toy?.__mock) throw new PlatformError('unsupported', 'author_not_configured');
+      if (platform.env !== 'standalone') {
+        if (typeof window.toy?.navigate !== 'function') throw new PlatformError('unsupported', 'navigate_unavailable');
+        try {
+          await window.toy.navigate({ type: 'space', id });
+          return;
+        } catch (error) {
+          throw classify(error);
+        }
+      }
+      // 先打开空页再断开 opener，既隔离新页面，也能识别弹窗被拦截的情况。
+      const target = window.open('about:blank', '_blank');
+      if (!target) throw new PlatformError('denied', 'space_popup_blocked');
+      target.opener = null;
+      target.location.href = `https://space.bilibili.com/${id}`;
     },
   },
 
@@ -240,6 +278,15 @@ export const platform = {
     return () => {};
   },
 };
+
+/** B站头像常为协议相对地址（//i0.hdslb.com/...）；统一成 https，避免在 file/http 页面下加载失败。 */
+export function normalizeAvatarUrl(url) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (u.startsWith('//')) return `https:${u}`;
+  if (u.startsWith('http://')) return `https://${u.slice(7)}`;
+  return u;
+}
 
 async function safeSupport(ability) {
   try {
