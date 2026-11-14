@@ -92,13 +92,17 @@
   display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px;
   background: var(--surface-1); border: 1px solid var(--border); color: var(--text-2); white-space: nowrap;
 }
-.pill.st-matched { color: var(--moon-gold); border-color: rgba(233, 199, 123, 0.5); animation: breathe 2.4s ease-in-out infinite; }
+.pill.st-matched { position: relative; color: var(--moon-gold); border-color: rgba(233, 199, 123, 0.5); }
+.pill.st-matched::after { /* 光晕静态绘制，只动画 opacity（合成层动画，不触发重绘） */
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 0 12px rgba(233, 199, 123, 0.35); opacity: 0; animation: breathe 2.4s ease-in-out infinite;
+}
 .pill.st-trading { color: var(--moon-gold); border-color: rgba(233, 199, 123, 0.5); }
 .pill.st-completed { color: var(--ok); border-color: rgba(94, 214, 160, 0.4); }
 .pill.st-failed { color: var(--bad); border-color: rgba(227, 109, 122, 0.4); }
 .pill.st-expired { color: var(--text-3); }
 .center-pill { display: block; width: max-content; margin: 8px auto; }
-@keyframes breathe { 50% { box-shadow: 0 0 12px rgba(233, 199, 123, 0.35); } }
+@keyframes breathe { 50% { opacity: 1; } }
 
 .tag { font-size: 11px; padding: 1px 8px; border-radius: 6px; }
 .tag-bili { background: var(--bili-pink); color: #fff; }
@@ -262,8 +266,12 @@
   }
   .bar-inner { max-width: none; }
 }
-.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 0 rgba(94, 214, 160, 0.6); animation: pulse 1.8s infinite; flex: none; }
-@keyframes pulse { 70% { box-shadow: 0 0 0 8px rgba(94, 214, 160, 0); } 100% { box-shadow: 0 0 0 0 rgba(94, 214, 160, 0); } }
+.pulse { position: relative; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none; }
+.pulse::after { /* 扩散圈用 transform + opacity，避免动画 box-shadow 每帧重绘 */
+  content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(94, 214, 160, 0.6);
+  animation: pulse 1.8s infinite;
+}
+@keyframes pulse { 0% { transform: scale(1); opacity: 1; } 70%, 100% { transform: scale(3); opacity: 0; } }
 
 /* ---------- 底部抽屉 BottomSheet ---------- */
 /* 显隐完全由 .open 类驱动：背景淡出时长不短于抽屉下滑时长，visibility 等两者都结束后才切换，

@@ -63,9 +63,18 @@ export function startStars(canvas) {
     ctx.globalAlpha = 1;
   }
 
+  // 滚动期间暂停重绘：滚动合成与全屏 canvas 抢资源，低端机会掉帧。停止 150ms 后恢复。
+  let scrolling = false;
+  let scrollTimer = 0;
+  window.addEventListener('scroll', () => {
+    scrolling = true;
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(() => { scrolling = false; }, 150);
+  }, { passive: true, capture: true });
+
   function loop(t) {
     raf = requestAnimationFrame(loop);
-    if (t - last < 33) return; // 30fps 上限
+    if (scrolling || t - last < 33) return; // 30fps 上限；滚动中跳过
     last = t;
     draw(t, true);
   }

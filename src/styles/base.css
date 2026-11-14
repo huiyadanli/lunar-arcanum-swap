@@ -12,11 +12,6 @@ body {
   font-size: 15px;
   line-height: 1.5;
   color: var(--text-1);
-  background:
-    radial-gradient(120% 70% at 50% -10%, #2A2466 0%, transparent 60%),
-    radial-gradient(90% 60% at 100% 100%, #10203F 0%, transparent 60%),
-    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
-  background-attachment: fixed;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
 }
@@ -31,6 +26,14 @@ button:disabled { cursor: not-allowed; }
 h1, h2, h3 { margin: 0; font-weight: 650; }
 p { margin: 0; }
 
+/* 背景渐变放在固定图层上，避免 background-attachment: fixed 在移动端 WebView 每帧滚动都整屏重绘 */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 50% -10%, #2A2466 0%, transparent 60%),
+    radial-gradient(90% 60% at 100% 100%, #10203F 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+}
 #stars { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 .sky-glow {
   position: fixed; inset: auto -20% -30% -20%; height: 60vh; z-index: -1; pointer-events: none;
@@ -64,10 +67,8 @@ p { margin: 0; }
   height: calc(var(--tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   display: flex; justify-content: space-around; align-items: stretch;
-  background: rgba(10, 13, 30, 0.82);
+  background: rgba(10, 13, 30, 0.97); /* 不用 backdrop-filter：固定在滚动内容上方时每帧都要重新模糊 */
   border-top: 1px solid var(--border);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
 }
 .nav-brand { display: none; }
 .nav-item {

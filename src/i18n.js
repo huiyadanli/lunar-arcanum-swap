@@ -84,8 +84,9 @@ const zh = {
     finishActive: '请先完成当前交换，再重新发布需求',
   },
   publish: {
-    title: '确认换牌需求', note: '给对方的留言（可选）', tradeTime: '或选择固定换牌时段',
-    noteHint: '留言或时段任选一项，再次点击可取消', quota: '当前可发布 {n} 次，发布后冷却 {minutes} 分钟',
+    title: '确认换牌需求', note: '给对方的留言（可选）', tradeTime: '或选择你有空的换牌时间段',
+    noteHint: '留言或有空时间段任选一项，再次点击可取消；对方会看到「有空时间」',
+    availablePartner: 'TA 有空换牌：{time}', availableSelf: '我有空换牌：{time}', quota: '当前可发布 {n} 次，发布后冷却 {minutes} 分钟',
     quotaUsed: '发布冷却中，{time} 后恢复', go: '确认并找人换牌',
   },
   presets: Object.fromEntries(Object.entries(TRADE_NOTE_LABELS).map(([id, text]) => [id, text['zh-CN']])),
@@ -258,8 +259,9 @@ const en = {
     finishActive: 'Finish your current trades before publishing again',
   },
   publish: {
-    title: 'Confirm trade request', note: 'Note to your partner (optional)', tradeTime: 'Or choose a fixed trade time',
-    noteHint: 'Choose one note or time slot. Tap again to clear.', quota: '{n} publish available · {minutes}-minute cooldown after publishing',
+    title: 'Confirm trade request', note: 'Note to your partner (optional)', tradeTime: 'Or pick when you are free to trade',
+    noteHint: 'Choose one note or free time slot. Tap again to clear. Your partner will see it as your free time.',
+    availablePartner: 'Free to trade: {time}', availableSelf: 'I\'m free to trade: {time}', quota: '{n} publish available · {minutes}-minute cooldown after publishing',
     quotaUsed: 'Publishing cooldown · available in {time}', go: 'Confirm & find a partner',
   },
   presets: Object.fromEntries(Object.entries(TRADE_NOTE_LABELS).map(([id, text]) => [id, text.en])),

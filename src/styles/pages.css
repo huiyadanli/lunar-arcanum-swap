@@ -277,6 +277,7 @@ body.is-welcome #views { padding-bottom: 0; }
 .partner.revealed .uid-digits { color: var(--moon-gold); text-shadow: 0 0 16px rgba(233, 199, 123, 0.4); }
 .partner-meta { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .partner-note { margin-top: 10px; font-size: 14px; color: var(--text-1); }
+.partner-time { margin-top: 6px; color: var(--moon-gold); }
 .partner .row-btns { justify-content: center; }
 .pair-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid var(--border); }
 .pair-row:first-of-type { border-top: 0; }

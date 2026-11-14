@@ -14,7 +14,7 @@ import { renderExchangeCard } from './lib/exchange-card.js';
 import { pickTagline } from './data/taglines.js';
 import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selection.js';
 import { hasWaitingCards, canStartTrade, matchStatus } from './lib/trade-state.js';
-import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote } from './lib/trade-notes.js';
+import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote, isTimePresetNote } from './lib/trade-notes.js';
 import { statePollDelay } from './lib/state-polling.js';
 import { publishCooldownMs } from './lib/publish-cooldown.js';
 import { platform, copyText, normalizeAvatarUrl } from './platform/index.js';
@@ -793,8 +793,12 @@ function app() {
     },
     canStartTrade,
     matchStatus,
+    // 快捷留言是一句话；固定时段是"有空的时间"，不能当留言展示。
     noteText(note) {
-      return isPresetNote(note) ? this.t(`presets.${note.preset}`) : '';
+      return isPresetNote(note) && !isTimePresetNote(note) ? this.t(`presets.${note.preset}`) : '';
+    },
+    timeText(note, who = 'partner') {
+      return isTimePresetNote(note) ? this.t(`publish.${who === 'self' ? 'availableSelf' : 'availablePartner'}`, { time: this.t(`presets.${note.preset}`) }) : '';
     },
     get poolStats() {
       return ONLINE_BACKEND ? this.poolStatsValue : api.stats(this.serverKey);
@@ -884,7 +888,10 @@ function app() {
         : error?.cause === 'space_popup_blocked' ? 'follow.popupBlocked'
         : error?.kind === 'unsupported' ? 'follow.openUnsupported' : 'follow.openFailed';
       // 抽屉里直接给出原因：只弹 Toast 容易被顶部容器栏遮住，用户会以为点击没反应。
-      this.followError = this.t(key);
+      const raw = error?.cause;
+      const detail = key === 'follow.openFailed' && (raw?.type || raw?.code || raw?.message)
+        ? ` (${[raw.type, raw.code, raw.message].filter(Boolean).join(' / ')})` : '';
+      this.followError = this.t(key) + detail;
       this.toast(this.followError, { error: true, ms: 4200 });
     },
     async recheckFollow(silent = false) {

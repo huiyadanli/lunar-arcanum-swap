@@ -74,6 +74,7 @@
         </div>
       </div>
       <p class="hint" x-show="noteText(listing.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#message'"></use></svg> <span x-text="noteText(listing.note)"></span></p>
+      <p class="hint" x-show="timeText(listing.note, 'self')"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#timer'"></use></svg> <span x-text="timeText(listing.note, 'self')"></span></p>
       <div class="row-btns">
         <button class="btn btn-ghost sm namecard-action" x-show="hasWaitingListing" @click="openNamecard('listing')"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#cards'"></use></svg><span x-text="t('namecard.entry')"></span></button>
         <button class="btn btn-ghost sm" @click="go('box')" x-text="t('trade.edit')"></button>

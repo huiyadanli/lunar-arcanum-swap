@@ -19,6 +19,10 @@ export const TRADE_NOTE_LABELS = {
   weekend: { 'zh-CN': '周末全天在线', en: 'Online all weekend' },
 };
 
+export function isTimePresetNote(note) {
+  return isPresetNote(note) && TRADE_TIME_PRESETS.includes(note.preset);
+}
+
 export function isPresetNote(note) {
   return note !== null && typeof note === 'object' && !Array.isArray(note)
     && typeof note.preset === 'string' && Object.hasOwn(TRADE_NOTE_LABELS, note.preset)

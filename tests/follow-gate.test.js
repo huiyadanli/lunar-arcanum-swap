@@ -112,7 +112,9 @@ test('交换关注按钮及个人页关注入口都会提示 SDK 跳转错误，
     window.toy.navigate = async () => { throw Object.assign(new Error('跳转失败'), { type }); };
     for (const action of ['goFollow', 'followFromMe']) {
       await app[action]();
-      assert.equal(notices.at(-1).message, type === 'unsupported' ? 'follow.openUnsupported' : 'follow.openFailed');
+      const message = notices.at(-1).message;
+      if (type === 'unsupported') assert.equal(message, 'follow.openUnsupported');
+      else assert.equal(message, `follow.openFailed (${type} / 跳转失败)`); // 附带 SDK 原始错误便于定位
       assert.equal(notices.at(-1).options.error, true);
       assert.equal(app.sheet, 'follow');
       assert.equal(app.followCache, null);

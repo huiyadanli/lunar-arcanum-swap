@@ -273,6 +273,8 @@ export const platform = {
           await window.toy.navigate({ type: 'space', id });
           return;
         } catch (error) {
+          // 保留 SDK 原始错误，便于定位“打开UP主空间失败”的真实原因（type/code/message）。
+          console.error('[toy.navigate] space failed', { id, type: error?.type, code: error?.code, message: error?.message }, error);
           throw classify(error);
         }
       }

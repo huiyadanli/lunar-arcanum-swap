@@ -22,6 +22,7 @@
           <span class="hint" x-text="t(m.partner.creditLevel >= 5 ? 'match.credit' : 'match.creditOk')"></span>
         </div>
         <p class="partner-note" x-show="noteText(m.partner.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#message'"></use></svg> 「<span x-text="noteText(m.partner.note)"></span>」</p>
+        <p class="partner-note partner-time" x-show="timeText(m.partner.note)"><svg class="icon icon-sm" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#timer'"></use></svg> <span x-text="timeText(m.partner.note)"></span></p>
         <div class="row-btns" x-show="m.partner.uid">
           <button class="btn btn-ghost sm" @click="copy(m.partner.uid)" x-text="t('match.copyUid')"></button>
         </div>
