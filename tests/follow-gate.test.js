@@ -34,7 +34,7 @@ before(async () => {
   createApp = runInNewContext(`(${source.slice(start, end)})`, {
     storage: { get: (_key, fallback) => fallback }, platform,
     CARDS: [], CARD_COUNT: 22, LANGS: [], SERVERS: {}, QUICK_NOTE_PRESETS: [], TRADE_TIME_PRESETS: [], REASONS: [],
-    dev: {}, ONLINE_BACKEND: false, imageImportIcons: '', rid4: () => 'TEST', detectLang: () => 'zh-CN',
+    dev: {}, ONLINE_BACKEND: false, imageImportIcons: '', miyousheGuideImage: '', rid4: () => 'TEST', detectLang: () => 'zh-CN',
     matchMedia: () => ({ matches: false }), moonPath: () => {}, canStartTrade: () => {}, matchStatus: () => {},
     maskUid: value => value,
   }, { filename: 'src/main.js' });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl } from '../src/platform/exchange-site.js';
+import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl, stripToyUrlHash } from '../src/platform/exchange-site.js';
 
 test('自部署保留目录并清理调试参数和当前路由', () => {
   assert.equal(standaloneSiteUrl('https://swap.example/collection/index.html?mock=bili&token=private#/trade/123'), 'https://swap.example/collection/');
@@ -29,4 +29,9 @@ test('Toy 相对页面不能逃逸到其他 Toy 或外域', () => {
   for (const path of ['https://other.example/', '//other.example/', '../other-toy/index.html', '/toy/other/index.html']) {
     assert.equal(biliToyPageUrl('https://www.bilibili.com/toy/current/', path), null);
   }
+});
+
+test('SDK 返回的 Toy 链接去掉 #/welcome 等 hash，其余保持不变', () => {
+  assert.equal(stripToyUrlHash('https://www.bilibili.com/toy/my-real-toy/#/welcome'), 'https://www.bilibili.com/toy/my-real-toy/');
+  assert.equal(stripToyUrlHash('https://www.bilibili.com/toy/my-real-toy/'), 'https://www.bilibili.com/toy/my-real-toy/');
 });

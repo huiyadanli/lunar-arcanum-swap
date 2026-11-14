@@ -9,12 +9,14 @@ import { storage } from './lib/storage.js';
 import { encodeBox, decodeBox } from './lib/box-code.js';
 import { parseImageCount, createImageBoxPatch } from './lib/image-box-draft.js';
 import imageImportIcons from '../assets/icons/ui.svg?url';
+import miyousheGuideImage from '../assets/guides/miyoushe-export.webp?url';
 import { renderExchangeCard } from './lib/exchange-card.js';
 import { pickTagline } from './data/taglines.js';
 import { getNamecardSelection, hasNamecardSelection } from './lib/namecard-selection.js';
 import { hasWaitingCards, canStartTrade, matchStatus } from './lib/trade-state.js';
 import { QUICK_NOTE_PRESETS, TRADE_TIME_PRESETS, TRADE_NOTE_PRESETS, isPresetNote } from './lib/trade-notes.js';
 import { statePollDelay } from './lib/state-polling.js';
+import { publishCooldownMs } from './lib/publish-cooldown.js';
 import { platform, copyText, normalizeAvatarUrl } from './platform/index.js';
 import { api } from './api/index.js';
 import { ONLINE_BACKEND } from './config.js';
@@ -51,6 +53,7 @@ function app() {
     // ---------- 常量 ----------
     cards: CARDS,
     imageImportIcons,
+    miyousheGuideImage,
     langs: LANGS,
     servers: SERVERS,
     presetKeys: QUICK_NOTE_PRESETS,
@@ -114,12 +117,11 @@ function app() {
     accountType: 'anon',
     loginHint: false,
     loginHintClosed: false,
-    // B站授权弹层：'entry' 进入时（可关闭）| 'match' 匹配前（必须授权）| null
+    // B站授权弹层：'entry' 进入时（可关闭）| null
     authGate: null,
     authBusy: false,
     followError: '',
     avatarBroken: false,
-    _authResume: null,
     fanCards: [17, 18, 21, 6, 22],
     boxCode: '',
     boxImportInput: '',
@@ -150,7 +152,7 @@ function app() {
         });
       }
       watchLowFps(() => {
-        if (this.fxOn && this.fx === 'high') {
+        if (this.ready && this.fxOn && this.fx === 'high') { // 启动阶段主线程繁忙，掉帧不代表设备性能差
           this.fxAuto = 'lite';
           this.applyFx('lite');
           this.toast(this.t('fx.downgraded'));
@@ -190,8 +192,16 @@ function app() {
       } catch (error) {
         this.showApiError(error);
       }
-      // B站环境（SDK 可用）进入即请求授权；这里可以先关掉，到匹配阶段仍会强制要求。
-      if (this.needsBiliAuth) this.authGate = 'entry';
+      // 进入时先静默尝试：之前授权过（平台复用有效授权，不弹窗）就直接通过，不再弹层。
+      // 没有有效授权时：只有已登录 B站 才弹授权（可关闭）；未登录不弹，按匿名进入。
+      // 匹配不再强制授权：匿名用户可直接发布 / 匹配，只是冷却更长。
+      if (this.needsBiliAuth) {
+        try {
+          const p = await this.platform.getProfileIfGranted();
+          if (p) { this.profile = { nickname: p.nickname, avatar: p.avatar }; this.avatarBroken = false; this.profileDeclined = false; }
+        } catch { /* 静默失败按未授权处理 */ }
+      }
+      if (this.needsBiliAuth && this.accountType === 'bili') this.authGate = 'entry';
       this.platform.onSafeArea((sa) => document.documentElement.style.setProperty('--safe-bottom', `${sa.bottom}px`));
 
       // 持久化 + 云同步（B站用户）：JSON.stringify 会读取所有嵌套字段，从而建立响应式依赖
@@ -312,16 +322,7 @@ function app() {
       return this.platform.env !== 'standalone' && this.platform.can('profile') && !this.profile;
     },
 
-    /** 匹配阶段的授权闸门：已授权或 SDK 不可用时直接放行；否则弹出必选授权，授权后继续 resume。 */
-    requireBiliAuth(resume) {
-      if (!this.needsBiliAuth) return true;
-      this._authResume = resume || null;
-      this.authGate = 'match';
-      return false;
-    },
-
     closeAuthGate() {
-      if (this.authGate === 'match') this._authResume = null;
       this.authGate = null;
     },
 
@@ -349,10 +350,7 @@ function app() {
           } catch (error) { this.showApiError(error); }
         }
         this.toast(this.t('welcome.biliLinked'));
-        const resume = this._authResume;
-        this._authResume = null;
         this.authGate = null;
-        if (resume) resume();
         return true;
       } finally {
         this.authBusy = false;
@@ -390,6 +388,10 @@ function app() {
       const h = Math.floor(ms / 3600e3);
       const m = Math.floor((ms % 3600e3) / 60e3);
       return h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+    },
+    /** 当前账号发布 / 重新匹配的冷却分钟数（B站 1，匿名 20）。 */
+    get cooldownMinutes() {
+      return publishCooldownMs(this.accountType) / 60e3;
     },
     get quotaTimeLeft() {
       const seconds = Math.max(0, Math.ceil((this.resetAt - this.quotaClock) / 1000));
@@ -704,7 +706,6 @@ function app() {
     },
     async doPublish() {
       if (this.busy) return;
-      if (!this.requireBiliAuth(() => this.doPublish())) return;
       const note = TRADE_NOTE_PRESETS.includes(this.note.preset) ? { preset: this.note.preset } : null;
       this.busy = true;
       try {
@@ -816,7 +817,6 @@ function app() {
     },
     async rematch() {
       if (!this.quotaLeft || this.busy) return;
-      if (!this.requireBiliAuth(() => this.rematch())) return;
       this.busy = true;
       try {
         const r = await api.rematch(this.serverKey);
@@ -1150,6 +1150,7 @@ function app() {
         fileName: '', url: null, phase: 'select', progress: 0, error: null,
         counts: Array(CARD_COUNT).fill(null), edited: {}, cards: [], grid: null,
         calibrating: false, crop: null, drag: null, columns: 3, firstId: 1, focusedCard: null,
+        guideOpen: false, guideZoom: false,
       };
       this.sheet = 'imageImport';
       // 焦点移入抽屉供键盘操作，但不画焦点环：鼠标或触屏打开时它会像一个常驻的选中框。

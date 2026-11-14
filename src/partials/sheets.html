@@ -1,7 +1,7 @@
 <!-- 底部抽屉（BottomSheet）。点击背景或按 Esc 可关闭。 -->
 <!-- 显隐只由 .open 类和 CSS 过渡驱动；内容按 sheetView 渲染，关闭动画结束后才卸载，避免离场时闪出空抽屉。 -->
 <div class="sheet-backdrop" :class="{ open: sheet && sheet !== 'namecard' }"
-     @click.self="sheet = null" @keydown.escape.window="sheet && (sheet = null)">
+     @click.self="sheet = null" @keydown.escape.window="imageImport?.guideZoom ? imageImport.guideZoom = false : sheet && (sheet = null)">
   <div class="sheet" role="dialog" aria-modal="true">
     <div class="sheet-grip" aria-hidden="true"></div>
 
@@ -71,7 +71,7 @@
           </template>
         </div>
         <p class="hint" id="trade-time-hint" x-text="t('publish.noteHint')"></p>
-        <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft }) : t('publish.quotaUsed', { time: quotaTimeLeft })"></p>
+        <p class="hint" x-text="quotaLeft ? t('publish.quota', { n: quotaLeft, minutes: cooldownMinutes }) : t('publish.quotaUsed', { time: quotaTimeLeft })"></p>
         <button class="btn btn-primary btn-block btn-shine" :disabled="busy || !quotaLeft" :aria-busy="busy" @click="doPublish()"
                 x-text="t('publish.go')"></button>
       </div>
@@ -220,6 +220,22 @@
               <small x-text="imageImport.fileName || (t('imageImport.dropHint') + (canPaste ? ' · ' + t('imageImport.pasteHint') : ''))"></small>
             </span>
           </label>
+
+          <!-- 导出教程：默认收起，未选图或识别遇到问题时才出现；点图可放大查看。 -->
+          <div class="image-import-guide" :class="{ open: imageImport.guideOpen }" x-show="!imageImport.url || imageImport.error">
+            <button class="image-import-toggle" :aria-expanded="imageImport.guideOpen" aria-controls="image-import-guide-body" @click="imageImport.guideOpen = !imageImport.guideOpen">
+              <span class="image-import-guide-title"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#info'"></use></svg><span x-text="t('imageImport.guideTitle')"></span></span>
+              <svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#chevron-right'"></use></svg>
+            </button>
+            <div class="image-import-guide-body" id="image-import-guide-body" x-show="imageImport.guideOpen">
+              <p class="hint" x-text="t('imageImport.guideSteps')"></p>
+              <button class="image-import-guide-image" @click="imageImport.guideZoom = true" :aria-label="t('imageImport.guideZoom')">
+                <img :src="miyousheGuideImage" :alt="t('imageImport.guideAlt')" loading="lazy" decoding="async" width="1200" height="1310">
+                <span class="image-import-guide-zoom"><svg class="icon icon-sm" aria-hidden="true"><use :href="imageImportIcons + '#plus'"></use></svg><span x-text="t('imageImport.guideZoom')"></span></span>
+              </button>
+              <p class="hint" x-text="t('imageImport.guideNote')"></p>
+            </div>
+          </div>
 
           <div class="image-import-progress" x-show="imageImport.phase === 'recognizing'" role="status" aria-live="polite">
             <div class="image-import-progress-top">

@@ -6,7 +6,7 @@ import { dev } from '../mock/dev.js';
 import { createMockToy } from '../mock/toy-sdk.js';
 import { createQrDataUrl } from '../lib/qrcode.js';
 import { ONLINE_BACKEND } from '../config.js';
-import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl } from './exchange-site.js';
+import { standaloneSiteUrl, biliToyPageUrl, isBiliToyUrl, stripToyUrlHash } from './exchange-site.js';
 import { isBilibiliHost, loadToySdk } from './toy-sdk-loader.js';
 
 /** 统一错误：kind = unsupported | rate_limited | not_logged_in | invalid | denied | unknown */
@@ -108,6 +108,17 @@ export const platform = {
     async remove(keys) {
       return withBackoff(() => window.toy.removeCloudStorage(keys));
     },
+  },
+
+  /**
+   * 静默读取已有授权：平台对未过期的 profile 授权会直接返回、不弹窗（SDK 文档 getUserProfile）。
+   * 没有有效授权（或未登录）时返回 null，不会主动弹出确认框，也不需要用户手势。
+   * 注意：Toy 页面读不到 B站 cookie（SDK 不提供，跨域/HttpOnly），这就是页面能拿到的「已登录且已授权」信号。
+   */
+  async getProfileIfGranted() {
+    if (!this.can('profile')) return null;
+    if (window.toy?.__mock && !window.toy.__hasProfileGrant()) return null; // 模拟 SDK：没授权过就不要触发模拟弹窗
+    return this.getProfile();
   },
 
   /** 必须在用户手势中调用；拒绝或不支持时返回 null。 */
@@ -215,7 +226,10 @@ export const platform = {
       try {
         const result = await window.toy.getQrCode({ size: 320 });
         if (isBiliToyUrl(result.url) && /^data:image\/png;base64,/.test(result.base64)) {
-          return { kind: 'bili', url: result.url, qr: result.base64, source: 'sdk', mock: !!window.toy.__mock };
+          const url = stripToyUrlHash(result.url);
+          // 链接带了 hash 时，二维码也按清理后的地址重新生成，保持图片与文字一致。
+          const qr = url === result.url ? result.base64 : createQrDataUrl(url);
+          return { kind: 'bili', url, qr, source: 'sdk', mock: !!window.toy.__mock };
         }
       } catch { /* 平台暂不可用时，仍只允许回退到真实的 B站 Toy 地址。 */ }
     }

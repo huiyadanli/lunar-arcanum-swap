@@ -129,14 +129,21 @@ p { margin: 0; }
 }
 body.is-ready #boot-loader { opacity: 0; visibility: hidden; }
 body.is-ready #boot-loader * { animation-play-state: paused; }
-.boot-moon { width: 112px; height: 112px; filter: drop-shadow(0 0 24px rgba(233, 199, 123, 0.22)); animation: boot-float 4.8s ease-in-out infinite; }
-.boot-moon svg { display: block; width: 100%; height: 100%; overflow: visible; }
-.boot-orbit { fill: none; stroke: var(--border); stroke-width: 1; }
-.boot-spin { transform-origin: 60px 60px; animation: boot-rotate 3.2s linear infinite; }
-.boot-orbit-arc { fill: none; stroke: var(--moon-gold); stroke-width: 1.5; stroke-linecap: round; stroke-dasharray: 54 273; opacity: 0.85; }
-.boot-orbit-dot { fill: var(--moon-gold); filter: drop-shadow(0 0 5px var(--moon-gold)); }
-/* 月相：暗面圆盘横向掠过亮面，形成盈亏循环 */
-.boot-shade { fill: #1A2042; animation: boot-phase 4.8s ease-in-out infinite; }
+.boot-moon { position: relative; width: 112px; height: 112px; will-change: transform; animation: boot-float 4.8s ease-in-out infinite; }
+.boot-moon::before { /* 静态光晕：用渐变代替会逐帧重绘的 drop-shadow */
+  content: ""; position: absolute; inset: -22%; border-radius: 50%;
+  background: radial-gradient(circle, rgba(233, 199, 123, 0.2), rgba(233, 199, 123, 0.06) 45%, transparent 68%);
+}
+.boot-orbit { position: absolute; inset: 6.67%; border-radius: 50%; border: 1px solid var(--border); }
+.boot-spin { position: absolute; inset: 6.67%; border-radius: 50%; will-change: transform; animation: boot-rotate 3.2s linear infinite; }
+.boot-spin::before { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 1.5px solid transparent; border-top-color: var(--moon-gold); opacity: 0.85; transform: rotate(-30deg); }
+.boot-spin::after { content: ""; position: absolute; top: -2.5px; left: calc(50% - 2.5px); width: 5px; height: 5px; border-radius: 50%; background: var(--moon-gold); box-shadow: 0 0 6px var(--moon-gold); }
+.boot-disc {
+  position: absolute; inset: 21.67%; border-radius: 50%; overflow: hidden; background: #F1E6C8;
+  box-shadow: 0 0 0 1.5px rgba(214, 222, 240, 0.22), 0 0 6px rgba(241, 230, 200, 0.5);
+}
+/* 月相：暗面圆盘横向掠过亮面，形成盈亏循环（仅 transform，合成器线程） */
+.boot-shade { position: absolute; inset: 0; border-radius: 50%; background: #1A2042; will-change: transform; animation: boot-phase 4.8s ease-in-out infinite; }
 .boot-title {
   font: 600 13px var(--font-display); letter-spacing: 0.42em; padding-left: 0.42em; color: var(--moon-gold);
   text-shadow: 0 0 18px rgba(233, 199, 123, 0.35);
@@ -147,8 +154,8 @@ body.is-ready #boot-loader * { animation-play-state: paused; }
 .boot-hint i:nth-of-type(2) { animation-delay: 0.2s; }
 .boot-hint i:nth-of-type(3) { animation-delay: 0.4s; }
 @keyframes boot-rotate { to { transform: rotate(360deg); } }
-@keyframes boot-float { 50% { transform: translateY(-6px); } }
-@keyframes boot-phase { 0% { transform: translateX(-68px); } 50% { transform: translateX(0); } 100% { transform: translateX(68px); } }
+@keyframes boot-float { 50% { transform: translate3d(0, -6px, 0); } }
+@keyframes boot-phase { 0% { transform: translate3d(-100%, 0, 0); } 50% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(100%, 0, 0); } }
 @keyframes boot-dot { 40% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .boot-moon, .boot-spin, .boot-hint i { animation: none; }

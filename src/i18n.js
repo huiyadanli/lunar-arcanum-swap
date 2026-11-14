@@ -19,6 +19,8 @@ const zh = {
     confirmRemaining: '请确认所有数量后再导入', decodeFailed: '这张图片暂时无法读取，请重新选择可打开的图片。',
     recognitionFailed: '自动识别暂未完成，可调整牌区重试，也可以手动填写数量。',
     source: '查看原图', sourceCard: '{card}的原图局部', closeSource: '收起原图', codeInstead: '使用字母码导入',
+    guideTitle: '如何从米游社导出圣牌图片？', guideSteps: '米游社App → 个人主页 → 原神卡片 → 向下滑动 → 点「月谕圣牌」收藏 → 右上角分享 → 保存图片。导出完整的收藏图后，回到这里选择它即可。',
+    guideAlt: '米游社导出月谕圣牌收藏图片的五步教程', guideZoom: '点击放大', guideNote: '请导出完整的收藏长图，不要裁剪或加滤镜；识别全程在本机完成。',
   },
   namecard: {
     entry: '制作交换名片', entryHint: '将换牌需求生成图片，保存后分享至其他平台', title: '你的交换名片',
@@ -83,7 +85,7 @@ const zh = {
   },
   publish: {
     title: '确认换牌需求', note: '给对方的留言（可选）', tradeTime: '或选择固定换牌时段',
-    noteHint: '留言或时段任选一项，再次点击可取消', quota: '当前可发布 {n} 次，发布后冷却 10 分钟',
+    noteHint: '留言或时段任选一项，再次点击可取消', quota: '当前可发布 {n} 次，发布后冷却 {minutes} 分钟',
     quotaUsed: '发布冷却中，{time} 后恢复', go: '确认并找人换牌',
   },
   presets: Object.fromEntries(Object.entries(TRADE_NOTE_LABELS).map(([id, text]) => [id, text['zh-CN']])),
@@ -164,7 +166,7 @@ const zh = {
     profileTitle: '获取你的昵称、头像和当前 Toy 内用户标识',
     profileBody: '你的 B站昵称、头像和仅用于当前 Toy 的用户标识，将用于当前 Toy 内展示和关联数据；不会向 Toy 提供你的 UID，也不能用于跨 Toy 识别。',
     authTitle: '用 B站账号授权后使用', authBody: '交换圣牌需要先授权 B站头像和昵称，用于展示和同步你的 Box。',
-    authMatchBody: '匹配前需要先完成 B站授权，才能发布换牌需求并查看匹配。', authBtn: '授权 B站账号', authLater: '稍后', authCancel: '取消',
+    authBtn: '授权 B站账号', authLater: '稍后',
     authDenied: '未完成授权，匹配前需要先授权 B站账号',
     allow: '允许', deny: '拒绝', mockLabel: 'B站平台弹窗（模拟）',
     spaceLabel: 'UP主 空间（模拟）', followBtn: '+ 关注', followedBtn: '已关注', backToToy: '返回 Toy',
@@ -191,6 +193,8 @@ const en = {
     confirmRemaining: 'Confirm every quantity before importing', decodeFailed: 'Could not read this image. Choose another image that opens correctly.',
     recognitionFailed: 'Recognition could not finish. Adjust the image area and retry, or enter quantities manually.',
     source: 'View source', sourceCard: 'Source detail for {card}', closeSource: 'Close source detail', codeInstead: 'Import a Box code instead',
+    guideTitle: 'How do I export the card image from HoYoLAB?', guideSteps: 'In the Miyoushe app: profile → Genshin card → scroll down → “Lunar Arcana” collection → Share (top right) → Save image. Then come back here and choose the saved image.',
+    guideAlt: 'Five-step guide to exporting the Lunar Arcana collection image from Miyoushe', guideZoom: 'Tap to enlarge', guideNote: 'Export the full collection image and do not crop it or add filters. Recognition runs entirely on this device.',
   },
   namecard: {
     entry: 'Create a swap card', entryHint: 'Save your trade request as an image to share on other platforms', title: 'Your swap card',
@@ -255,7 +259,7 @@ const en = {
   },
   publish: {
     title: 'Confirm trade request', note: 'Note to your partner (optional)', tradeTime: 'Or choose a fixed trade time',
-    noteHint: 'Choose one note or time slot. Tap again to clear.', quota: '{n} publish available · 10-minute cooldown after publishing',
+    noteHint: 'Choose one note or time slot. Tap again to clear.', quota: '{n} publish available · {minutes}-minute cooldown after publishing',
     quotaUsed: 'Publishing cooldown · available in {time}', go: 'Confirm & find a partner',
   },
   presets: Object.fromEntries(Object.entries(TRADE_NOTE_LABELS).map(([id, text]) => [id, text.en])),
@@ -336,7 +340,7 @@ const en = {
     profileTitle: 'Share your nickname, avatar and Toy user ID',
     profileBody: 'Your Bilibili nickname, avatar and a Toy-only user ID will be used for display and data within this Toy. Your UID is never shared and it can\'t be used across Toys.',
     authTitle: 'Authorize with Bilibili to continue', authBody: 'Authorize your Bilibili avatar and nickname to trade cards and sync your Box.',
-    authMatchBody: 'Bilibili authorization is required before you can publish a trade request and get matches.', authBtn: 'Authorize Bilibili', authLater: 'Later', authCancel: 'Cancel',
+    authBtn: 'Authorize Bilibili', authLater: 'Later',
     authDenied: 'Not authorized yet — Bilibili authorization is required for matching',
     allow: 'Allow', deny: 'Deny', mockLabel: 'Bilibili platform dialog (mock)',
     spaceLabel: 'Creator space (mock)', followBtn: '+ Follow', followedBtn: 'Following', backToToy: 'Back to Toy',

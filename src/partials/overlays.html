@@ -17,6 +17,16 @@
   </template>
 </div>
 
+<!-- 米游社导出教程大图：盖在导入抽屉之上，可滚动/双指缩放查看细节；点背景、关闭按钮或按 Esc 退出 -->
+<div class="guide-zoom" x-show="imageImport && imageImport.guideZoom" x-cloak x-transition.opacity role="dialog" aria-modal="true"
+     :aria-label="t('imageImport.guideTitle')" @click.self="imageImport.guideZoom = false"
+     x-effect="imageImport && imageImport.guideZoom && $nextTick(() => $refs.guideClose?.focus({ preventScroll: true }))">
+  <button class="icon-btn guide-zoom-close" x-ref="guideClose" @click="imageImport.guideZoom = false" :aria-label="t('common.close')"><svg class="icon" aria-hidden="true"><use :href="imageImportIcons + '#close'"></use></svg></button>
+  <div class="guide-zoom-scroll" @click.self="imageImport.guideZoom = false">
+    <img :src="miyousheGuideImage" :alt="t('imageImport.guideAlt')" decoding="async">
+  </div>
+</div>
+
 <!-- 匹配揭晓（6.5.2） -->
 <div class="reveal" x-show="revealing" x-cloak role="dialog" aria-modal="true" :aria-label="t('trade.matchedTitle')">
   <template x-if="revealing">
@@ -36,14 +46,14 @@
   </template>
 </div>
 
-<!-- B站授权：进入时可关闭（entry），匹配前必须授权（match） -->
+<!-- B站授权：进入时可关闭 -->
 <div class="auth-backdrop" x-show="authGate" x-cloak role="dialog" aria-modal="true" :aria-label="t('platform.authTitle')">
   <div class="auth-dialog">
     <span class="auth-badge"><svg class="icon" aria-hidden="true" focusable="false"><use :href="imageImportIcons + '#bilibili'"></use></svg></span>
     <b x-text="t('platform.authTitle')"></b>
-    <p x-text="t(authGate === 'match' ? 'platform.authMatchBody' : 'platform.authBody')"></p>
+    <p x-text="t('platform.authBody')"></p>
     <button class="btn btn-primary btn-block" :aria-busy="authBusy" @click="authorizeBili()" x-text="t('platform.authBtn')"></button>
-    <button class="link-btn" @click="closeAuthGate()" x-text="t(authGate === 'match' ? 'platform.authCancel' : 'platform.authLater')"></button>
+    <button class="link-btn" @click="closeAuthGate()" x-text="t('platform.authLater')"></button>
   </div>
 </div>
 

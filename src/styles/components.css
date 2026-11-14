@@ -345,7 +345,7 @@ textarea:focus, .text-input:focus { border-color: var(--arcane); }
 
 /* ---------- 请求等待提示 ---------- */
 .request-bar {
-  position: fixed; top: var(--top-offset); left: 0; right: 0; height: 3px; z-index: 101; overflow: hidden; pointer-events: none;
+  position: fixed; top: var(--top-offset); left: 0; right: 0; height: 3px; z-index: 131; overflow: hidden; pointer-events: none;
   background: rgba(233, 199, 123, 0.18);
 }
 .request-bar::after {
@@ -354,7 +354,7 @@ textarea:focus, .text-input:focus { border-color: var(--arcane); }
 }
 @keyframes request-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 .request-status {
-  position: fixed; left: 50%; transform: translateX(-50%); z-index: 101; pointer-events: none;
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 131; pointer-events: none;
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 16px); max-width: min(520px, calc(100vw - 32px));
   display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 999px; font-size: 13px; line-height: 1.4;
   background: rgba(26, 32, 66, 0.96); border: 1px solid var(--border-strong); box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
@@ -369,7 +369,7 @@ textarea:focus, .text-input:focus { border-color: var(--arcane); }
 
 /* ---------- Toast ---------- */
 .toasts {
-  position: fixed; top: calc(12px + var(--top-offset)); left: 0; right: 0; z-index: 100;
+  position: fixed; top: calc(12px + var(--top-offset)); left: 0; right: 0; z-index: 130; /* 必须高于授权/平台弹层（105/110）和首屏遮罩（120），否则授权失败的报错会被盖住 */
   display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; padding: 0 16px;
 }
 .toast {

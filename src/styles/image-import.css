@@ -54,6 +54,28 @@
 .image-import-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 /* 打开抽屉时会把焦点放到文件框上；只在键盘操作时显示焦点环，否则看起来像一直处于选中状态。 */
 .image-import-picker:has(input:focus-visible) { outline: 2px solid var(--arcane); outline-offset: 3px; }
+/* 米游社导出教程：折叠面板 + 可点击放大的缩略图。 */
+.image-import-guide { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.image-import-guide .image-import-toggle .icon:last-child { transition: transform 0.2s; }
+.image-import-guide.open .image-import-toggle .icon:last-child { transform: rotate(90deg); }
+.image-import-guide-title { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.image-import-guide-title .icon { flex: none; }
+.image-import-guide-body { padding: 0 12px 12px; }
+.image-import-guide-body .hint { line-height: 1.6; }
+.image-import-guide-image { position: relative; display: block; width: 100%; margin: 10px 0; padding: 0; line-height: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; cursor: zoom-in; background: var(--bg-0); }
+.image-import-guide-image img { display: block; width: 100%; height: auto; max-height: 46dvh; object-fit: cover; object-position: top; }
+.image-import-guide-zoom {
+  position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px;
+  font-size: 12px; line-height: 1.4; color: var(--text-1); border-radius: 999px; background: rgba(8, 10, 24, 0.78); border: 1px solid var(--border-strong);
+}
+.image-import-guide-image:focus-visible { outline: 2px solid var(--arcane); outline-offset: 2px; }
+.guide-zoom { position: fixed; inset: 0; z-index: 75; display: flex; background: rgba(4, 6, 14, 0.92); }
+.guide-zoom-scroll { flex: 1; min-width: 0; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y pinch-zoom; padding: calc(56px + env(safe-area-inset-top, 0px)) 12px calc(24px + var(--safe-bottom)); }
+/* 手机上图片宽于屏幕，左右滑动即可看清小字；桌面端居中完整显示。 */
+.guide-zoom-scroll img { display: block; width: max(100%, 720px); max-width: none; height: auto; margin: 0 auto; border-radius: 10px; }
+@media (min-width: 900px) { .guide-zoom-scroll img { width: min(100%, 1000px); } }
+.guide-zoom-close { position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); right: 12px; z-index: 1; background: rgba(8, 10, 24, 0.8); border: 1px solid var(--border-strong); }
+
 /* 选好图片后收成一行，把空间让给识别结果。 */
 .image-import-picker.compact { flex-direction: row; gap: 12px; margin-top: 0; padding: 10px 12px; text-align: left; border-style: solid; border-color: var(--border); }
 .image-import-picker.compact .image-import-picker-icon { width: 38px; height: 38px; }

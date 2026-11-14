@@ -28,3 +28,15 @@ export function biliToyPageUrl(href, path = '') {
 export function isBiliToyUrl(href) {
   return !!biliToyPageUrl(href);
 }
+
+/** SDK 返回的 Toy 链接可能带 #/welcome 等路由；名片只需要 Toy 页面本身。 */
+export function stripToyUrlHash(href) {
+  try {
+    const url = new URL(href);
+    if (!url.hash) return href;
+    url.hash = '';
+    return url.href;
+  } catch {
+    return href;
+  }
+}

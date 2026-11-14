@@ -96,13 +96,13 @@ describe('PostgreSQL 真实事务与业务约束', { concurrency: false }, () =>
     assert.equal((await state('alice')).quota.left, 1);
   });
 
-  it('发布与重新匹配共用十分钟冷却，到期无需维护即可再次使用', async () => {
+  it('匿名账号发布与重新匹配共用 20 分钟冷却，到期无需维护即可再次使用', async () => {
     await bind('alice');
     const started = Date.now();
     await publish('alice', { 17: 1 }, [1]);
     const first = await state('alice');
-    assert.ok(first.quota.resetAt >= started + 600000);
-    assert.ok(first.quota.resetAt <= Date.now() + 600000);
+    assert.ok(first.quota.resetAt >= started + 20 * 60e3);
+    assert.ok(first.quota.resetAt <= Date.now() + 20 * 60e3);
     await assert.rejects(call('alice', 'rematch'), /DAILY_LIMIT/);
     await call('alice', 'edit', { give: { 17: 2 }, want: [1], note: null, version: first.listing.version });
     assert.equal((await state('alice')).quota.resetAt, first.quota.resetAt);
@@ -112,8 +112,22 @@ describe('PostgreSQL 真实事务与业务约束', { concurrency: false }, () =>
     await call('alice', 'rematch');
     const second = await state('alice');
     assert.equal(second.quota.left, 0);
-    assert.ok(second.quota.resetAt >= rematchedAt + 600000);
-    assert.ok(second.quota.resetAt <= Date.now() + 600000);
+    assert.ok(second.quota.resetAt >= rematchedAt + 20 * 60e3);
+    assert.ok(second.quota.resetAt <= Date.now() + 20 * 60e3);
+  });
+
+  it('B站授权账号发布与重新匹配冷却为 1 分钟，且无需授权即可匹配的匿名账号不受影响', async () => {
+    await db.exec("INSERT INTO public.accounts(id,auth_user_id,custom_user_id,account_type) VALUES ('bili:carol','auth-carol','carol-custom','bili')");
+    await call('auth-carol', 'profile', { uid, server: 'asia', region: 'asia' }, randomUUID(), 'carol-custom');
+    const started = Date.now();
+    await call('auth-carol', 'publish', { give: { 17: 1 }, want: [1], mode: 'quick', note: null }, randomUUID(), 'carol-custom');
+    const first = await call('auth-carol', 'state', {}, randomUUID(), 'carol-custom');
+    assert.equal(first.me.accountType, 'bili');
+    assert.ok(first.quota.resetAt >= started + 60e3);
+    assert.ok(first.quota.resetAt <= Date.now() + 60e3);
+    await bind('alice');
+    await publish('alice', { 17: 1 }, [1]);
+    assert.ok((await state('alice')).quota.resetAt >= started + 20 * 60e3);
   });
 
   it('撤回立即恢复额度，允许重发；旧撤回重放不会清除新一轮冷却', async () => {

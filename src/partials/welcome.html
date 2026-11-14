@@ -7,7 +7,7 @@
       <div class="showcase-heading" aria-hidden="true"><span class="fine-line"></span><span>LUNAR ARCANUM</span><span class="fine-line"></span></div>
       <div class="showcase" role="group" :aria-label="t('welcome.gallery')" :class="{ 'is-dragging': dragging }"
            @pointerdown="down($event)" @pointermove="move($event)" @pointerup="up($event)"
-           @pointercancel="cancel()" @lostpointercapture="cancel()" @pointerleave="leave()"
+           @pointercancel="cancel()" @lostpointercapture.self="cancel()" @pointerleave="leave()"
            @keydown.arrow-left.prevent="step(-1)" @keydown.arrow-right.prevent="step(1)"
            @keydown.home.prevent="select(0)" @keydown.end.prevent="select(fanCards.length - 1)">
         <div class="showcase-aura" aria-hidden="true"></div>

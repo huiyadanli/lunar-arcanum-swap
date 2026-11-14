@@ -20,14 +20,11 @@
 <body x-data="app" :class="{ 'is-ready': ready, 'is-wide': wide, 'is-welcome': route === 'welcome' }" :data-env="platform.env" :lang="lang">
   <!-- 首屏载入提示：纯静态，不依赖 JS；body.is-ready 后淡出 -->
   <div id="boot-loader" role="status" aria-live="polite">
+    <!-- 全部用 HTML 元素 + transform 动画，可由合成器线程执行，主线程繁忙（Alpine 启动）时也不掉帧 -->
     <div class="boot-moon" aria-hidden="true">
-      <svg viewBox="0 0 120 120">
-        <defs><clipPath id="boot-clip"><circle cx="60" cy="60" r="34"/></clipPath></defs>
-        <circle class="boot-orbit" cx="60" cy="60" r="52"/>
-        <g class="boot-spin"><circle class="boot-orbit-arc" cx="60" cy="60" r="52"/><circle class="boot-orbit-dot" cx="60" cy="8" r="2.6"/></g>
-        <circle cx="60" cy="60" r="34" class="moon-dark"/>
-        <g clip-path="url(#boot-clip)"><circle cx="60" cy="60" r="34" class="moon-lit boot-lit"/><circle cx="60" cy="60" r="34" class="boot-shade"/></g>
-      </svg>
+      <div class="boot-orbit"></div>
+      <div class="boot-spin"></div>
+      <div class="boot-disc"><div class="boot-shade"></div></div>
     </div>
     <div class="boot-title">LUNAR ARCANUM</div>
     <div class="boot-hint"><span lang="zh">正在汇聚月光</span><i></i><i></i><i></i></div>

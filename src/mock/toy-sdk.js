@@ -25,6 +25,7 @@ export function createMockToy() {
   const cloud = () => storage.get('mockcloud', {});
   return {
     __mock: true,
+    __hasProfileGrant: () => dev.loggedIn && !!storage.get('mockprofile'),
     async isSupport(name) {
       if (dev.env === 'toy-web' && APP_ONLY.includes(name)) return false;
       return true;
