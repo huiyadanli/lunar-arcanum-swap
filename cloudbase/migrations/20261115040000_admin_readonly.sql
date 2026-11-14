@@ -71,7 +71,7 @@ BEGIN
     ) INTO result;
     RETURN result || jsonb_build_object('updatedAt',swap_private.ms(now()));
   ELSIF view_name='waiting' THEN
-    WITH filtered AS MATERIALIZED (
+    WITH filtered AS NOT MATERIALIZED (
       SELECT l.created_at,l.id,jsonb_build_object('id',l.id,'accountId',l.account_id,'accountType',a.account_type,
         'uid',l.uid_snapshot,'server',l.server,'status',l.status,'give',l.give,'want',l.want,
         'reservedGive',l.reserved_give,'reservedWant',l.reserved_want,'mode',l.mode,'note',l.note,'version',l.version,
@@ -87,7 +87,7 @@ BEGIN
     SELECT jsonb_build_object('total',(SELECT count(*) FROM filtered),'items',coalesce((SELECT jsonb_agg(item ORDER BY created_at DESC,id DESC)
       FROM (SELECT * FROM filtered ORDER BY created_at DESC,id DESC LIMIT page_size OFFSET (page_number-1)*page_size) x),'[]')) INTO result;
   ELSIF view_name='matches' THEN
-    WITH filtered AS MATERIALIZED (
+    WITH filtered AS NOT MATERIALIZED (
       SELECT m.created_at,m.id,jsonb_build_object('id',m.id,'accountA',m.account_a,'accountB',m.account_b,
         'accountTypeA',a.account_type,'accountTypeB',b.account_type,'listingA',m.listing_a,'listingB',m.listing_b,
         'partnerA',m.partner_a,'partnerB',m.partner_b,'pairs',m.pairs,'status',m.status,'scannedBy',m.scanned_by,
@@ -104,7 +104,7 @@ BEGIN
     SELECT jsonb_build_object('total',(SELECT count(*) FROM filtered),'items',coalesce((SELECT jsonb_agg(item ORDER BY created_at DESC,id DESC)
       FROM (SELECT * FROM filtered ORDER BY created_at DESC,id DESC LIMIT page_size OFFSET (page_number-1)*page_size) x),'[]')) INTO result;
   ELSIF view_name='users' THEN
-    WITH filtered AS MATERIALIZED (
+    WITH filtered AS NOT MATERIALIZED (
       SELECT a.created_at,a.id,jsonb_build_object('id',a.id,'accountType',a.account_type,'uid',p.uid,'server',p.server,'region',p.region,
         'credit',p.credit,'completedCount',p.completed_count,'failStreak',p.fail_streak,
         'cooldownUntil',swap_private.ms(p.cooldown_until),'quotaResetAt',swap_private.ms(p.quota_reset_at),'createdAt',swap_private.ms(a.created_at)) item
@@ -116,7 +116,7 @@ BEGIN
     SELECT jsonb_build_object('total',(SELECT count(*) FROM filtered),'items',coalesce((SELECT jsonb_agg(item ORDER BY created_at DESC,id DESC)
       FROM (SELECT * FROM filtered ORDER BY created_at DESC,id DESC LIMIT page_size OFFSET (page_number-1)*page_size) x),'[]')) INTO result;
   ELSE
-    WITH filtered AS MATERIALIZED (
+    WITH filtered AS NOT MATERIALIZED (
       SELECT f.created_at,f.id,jsonb_build_object('id',f.id,'reporterAccountId',f.reporter_account_id,'targetAccountId',f.target_account_id,
         'matchId',f.match_id,'kind',f.kind,'reason',f.reason,'note',f.note,'status',f.status,'createdAt',swap_private.ms(f.created_at)) item
       FROM public.feedback f JOIN public.matches m ON m.id=f.match_id JOIN public.accounts a ON a.id=f.reporter_account_id

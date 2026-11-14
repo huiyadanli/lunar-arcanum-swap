@@ -5,7 +5,9 @@
   <!-- 账号卡片 -->
   <div class="account arch">
     <div class="account-top">
-      <div class="avatar" :class="{ bili: accountType === 'bili' }">
+      <div class="avatar" :class="{ bili: accountType === 'bili' }" role="button" tabindex="0" aria-label="账号头像"
+           style="touch-action: manipulation; user-select: none"
+           @click="adminEntryClick()" @keydown.enter.prevent="!$event.repeat && adminEntryClick()" @keydown.space.prevent="!$event.repeat && adminEntryClick()">
         <template x-if="accountType === 'bili' && profile">
           <span class="avatar-fill">
             <img class="avatar-img" x-show="profile.avatar && !avatarBroken" :src="profile.avatar" alt="" referrerpolicy="no-referrer" @error="avatarBroken = true">

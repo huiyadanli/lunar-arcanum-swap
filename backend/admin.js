@@ -25,6 +25,7 @@ export function adminQuery(input) {
   if (query.accountType && !['anon', 'bili'].includes(query.accountType)) invalid();
   if (query.status && !STATUSES[view]?.includes(query.status)) invalid();
   if (query.id && ['waiting', 'matches', 'feedback'].includes(view) && !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(query.id)) invalid();
+  if (query.id && view !== 'users') query.id = query.id.toLowerCase();
   if (input.password !== undefined && (typeof input.password !== 'string' || input.password.length > 512)) invalid();
   return { query, password: input.password };
 }

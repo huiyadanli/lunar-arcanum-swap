@@ -20,6 +20,7 @@ import { publishCooldownMs } from './lib/publish-cooldown.js';
 import { platform, copyText, normalizeAvatarUrl } from './platform/index.js';
 import { api } from './api/index.js';
 import { ONLINE_BACKEND } from './config.js';
+import { createSecretTap } from './admin/entry.js';
 import { dev, setDev } from './mock/dev.js';
 import { toyUi } from './mock/toy-sdk.js';
 import { detectTier, watchLowFps } from './fx/perf.js';
@@ -43,6 +44,8 @@ const rid4 = () => Math.random().toString(16).slice(2, 6).toUpperCase();
 
 function app() {
   const saved = storage.get('state', {});
+  let adminTap;
+  let adminOpening = false;
   // 大图、AbortController等资源不进入Alpine响应式状态或持久化快照。
   let imageSource = null;
   let imageController = null;
@@ -238,6 +241,21 @@ function app() {
         profileDeclined: this.profileDeclined, anonTag: this.anonTag, session: ONLINE_BACKEND ? null : this.session,
         notify: this.notify,
       };
+    },
+
+    // 附加入口：只有触发时才加载后台资源，不改路由、个人快照或轮询。
+    async adminEntryClick() {
+      if (adminOpening) return;
+      adminTap ||= createSecretTap();
+      if (!adminTap()) return;
+      adminOpening = true;
+      try {
+        const { openAdminPanel } = await import('./admin/panel.js');
+        const query = ONLINE_BACKEND ? body => api.queryAdmin(body)
+          : (await import('./admin/mock.js')).createMockAdminQuery(this.accountType);
+        openAdminPanel({ query, accountType: this.accountType, mock: !ONLINE_BACKEND });
+      } catch { this.toast('管理面板暂时无法打开，请重试。', { error: true }); }
+      finally { adminOpening = false; }
     },
 
     // ---------- 身份（设计文档 3.3、3.4） ----------

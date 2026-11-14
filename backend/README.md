@@ -1,5 +1,7 @@
 # 后端开发与部署
 
+附加只读管理后台的入口、密码配置、数据库名单登记及接口说明见 [管理后台](../docs/admin-console.md)。该功能使用独立只读 RPC，不接入现有匹配、结算或维护流程。
+
 当前已实现并部署 11 个接口、PostgreSQL 匹配事务、信用结算、申诉冲正与定时维护。UID 允许重复填写，需求、配额、库存占用和权限均按交换账号独立处理。前端通过 `npm run dev:online` 连接已部署 API，默认 `npm run dev` 继续使用模拟后端。
 
 API 根地址：`https://lunar-arcanum-swap-d9cl8ad90b4e4-1252025612.ap-shanghai.app.tcloudbase.com/api/v1`。可通过 [配置接口](https://lunar-arcanum-swap-d9cl8ad90b4e4-1252025612.ap-shanghai.app.tcloudbase.com/api/v1/config) 检查服务；业务接口需要真实 CloudBase 会话。
