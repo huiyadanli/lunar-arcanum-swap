@@ -18,7 +18,8 @@ export function createAdminController({ query, onChange = () => {} }) {
   async function load() {
     if (closed) return;
     const current = ++revision;
-    state.loading = true; state.error = ''; state.detail = null; emit();
+    // 视图/筛选已更新，旧记录不再属于当前查询；先清空再通知界面，避免按新结构渲染旧数据。
+    state.loading = true; state.error = ''; state.data = null; state.detail = null; emit();
     try {
       const result = await query({ view: state.view, server: state.server, status: state.status,
         accountType: state.accountType, search: state.search, accountId: state.accountId,

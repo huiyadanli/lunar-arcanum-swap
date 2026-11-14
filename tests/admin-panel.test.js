@@ -48,6 +48,34 @@ test('本地模拟独立查询、筛选与分页，不把返回记录作为可�
   assert.equal((await query({ view: 'overview', password: 'dev-admin', server: 'irminsul' })).poolUsers, 1);
 });
 
+test('从用户、需求或反馈切换到配对时，请求开始前不再按配对结构渲染旧记录', async () => {
+  const fixtures = createMockAdminQuery('bili');
+  for (const previousView of ['users', 'waiting', 'feedback']) {
+    let resolveMatches;
+    let renderedUid;
+    const panel = createAdminController({
+      query: body => body.view === 'matches' ? new Promise(resolve => { resolveMatches = resolve; }) : fixtures(body),
+      onChange: state => {
+        // 对应实际配对列表读取双方 UID 的路径；旧视图的数据没有 partnerA/partnerB。
+        if (state.view === 'matches' && state.data) {
+          for (const item of state.data.items) renderedUid = `${item.partnerA.uid}/${item.partnerB.uid}`;
+        }
+      },
+    });
+    await panel.select(previousView);
+    assert.ok(panel.state.data.items.length > 0);
+    const switching = panel.select('matches');
+    assert.equal(panel.state.data, null, `${previousView} 的旧记录应在加载通知前清除`);
+    assert.equal(panel.state.loading, true);
+    assert.equal(typeof resolveMatches, 'function', '切换后的查询应正常发出');
+    resolveMatches(await fixtures({ view: 'matches' }));
+    await switching;
+    assert.equal(panel.state.loading, false);
+    assert.equal(renderedUid, '812345678/898765432');
+    panel.close();
+  }
+});
+
 test('线上管理请求复用真实会话，独立加载，不改变个人缓存和全站 pending', async () => {
   const requests = [], pending = [], local = new Map();
   const api = createOnlineApi({ apiBase: 'https://test/api/v1', storage: { get: key => local.get(key), set: (key, value) => local.set(key, value) }, uuid: () => 'device-test-123',
