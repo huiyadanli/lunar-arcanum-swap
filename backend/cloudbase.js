@@ -101,7 +101,12 @@ export function createCloudBaseService(config, fetcher = fetch) {
     if (action === 'state' && result.nextHistoryCursor) result.nextHistoryCursor = Buffer.from(JSON.stringify(result.nextHistoryCursor)).toString('base64url');
     return result;
   }
-  return { authenticate, execute, session, maintenance: () => rpc('swap_maintenance', {}) };
+  return { authenticate, execute, session, maintenance: () => rpc('swap_maintenance', {}),
+    // 只读管理 RPC 与业务 dispatch 隔离；密码及客户端身份字段不会进入数据库。
+    queryAdmin: (identity, query, passwordVerified) => rpc('swap_admin_query', {
+      p_auth_id: identity.authId, p_custom_id: identity.customId, p_password_verified: passwordVerified, p_query: query,
+    }),
+  };
 }
 
 export function loadConfig(env = process.env) {
@@ -121,6 +126,7 @@ export function loadConfig(env = process.env) {
   }
   return {
     envId, serverKey, hmacSecret, customLoginKey,
+    adminPasswordHash: env.SWAP_ADMIN_PASSWORD_HASH || '',
     apiBase: env.CLOUDBASE_API_BASE || `https://${envId}.api.tcloudbasegateway.com`,
     publishableKey: env.CLOUDBASE_PUBLISHABLE_KEY || '', authorMid: env.SWAP_AUTHOR_MID || '',
     maintenanceSignals: maintenanceEnabled && env.SWAP_MAINTENANCE_SIGNALS !== 'false',

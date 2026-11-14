@@ -42,7 +42,7 @@ const zh = {
     next: '下一步', back: '返回', done: '完成', cancel: '取消', confirm: '确认', copy: '复制',
     copied: '已复制', close: '关闭', retry: '重试', undo: '撤销', loading: '加载中…', requesting: '正在连接服务…', requestingSlow: '服务响应较慢，仍在处理，请稍候，不必重复操作', all: '全部', requestFailed: '请求失败，请稍后重试',
   },
-  nav: { box: '我的Box', trade: '交换', me: '我的', home: '返回首页' },
+  nav: { box: '我的Box', trade: '交换', me: '我的' },
   welcome: {
     eyebrow: '让每一张圣牌，找到它的归处', description: '连接月下的收藏者，让多余成为彼此的惊喜。',
     gallery: '圣牌展台，支持左右方向键和横向滑动', collection: '月谕圣牌 · 22 种收藏',
@@ -108,7 +108,7 @@ const zh = {
   },
   status: {
     waiting: '等待匹配中', matched: '已匹配 · 点击开始交换', trading: '交换中 · 加好友',
-    confirming: '等待对方确认', completed: '交换完成', failed: '未完成', expired: '已超时',
+    confirming: '等待对方确认', completed: '交换完成', failed: '未完成', expired: '已超时', disputed: '存在争议',
     awaitingConfirmation: '对方已确认 · 请确认结果', reserved: '卡牌已预留',
   },
   match: {
@@ -217,7 +217,7 @@ const en = {
     next: 'Next', back: 'Back', done: 'Done', cancel: 'Cancel', confirm: 'Confirm', copy: 'Copy',
     copied: 'Copied', close: 'Close', retry: 'Retry', undo: 'Undo', loading: 'Loading…', requesting: 'Connecting to the service…', requestingSlow: 'The service is slow to respond. Still working on it, so please wait and avoid repeating the action.', all: 'All', requestFailed: 'Request failed, please try again',
   },
-  nav: { box: 'My Box', trade: 'Trade', me: 'Me', home: 'Back to home' },
+  nav: { box: 'My Box', trade: 'Trade', me: 'Me' },
   welcome: {
     eyebrow: 'Every card has a place to belong', description: 'Meet collectors under the moon. Turn your spares into a little serendipity.',
     gallery: 'Card showcase. Use left and right arrow keys or swipe horizontally', collection: 'Lunar Arcanum · 22 collectibles',
@@ -283,7 +283,7 @@ const en = {
   },
   status: {
     waiting: 'Waiting for a match', matched: 'Matched · Tap to start', trading: 'Trading · Add friend',
-    confirming: 'Waiting for partner', completed: 'Completed', failed: 'Not completed', expired: 'Expired',
+    confirming: 'Waiting for partner', completed: 'Completed', failed: 'Not completed', expired: 'Expired', disputed: 'Disputed',
     awaitingConfirmation: 'Partner confirmed · Your confirmation needed', reserved: 'Cards reserved',
   },
   match: {

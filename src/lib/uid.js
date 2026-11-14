@@ -3,7 +3,8 @@
 
 export const SERVERS = {
   celestia: { region: 'cn', name: { 'zh-CN': '天空岛', en: 'Celestia' }, tone: 'gold', tz: 8 },
-  irminsul: { region: 'cn', name: { 'zh-CN': '世界树', en: 'Irminsul' }, tone: 'gold', tz: 8 },
+  // 同属国服不代表可以互加好友：世界树必须使用独立的匹配分区。
+  irminsul: { region: 'cn_bili', name: { 'zh-CN': '世界树', en: 'Irminsul' }, tone: 'gold', tz: 8 },
   asia: { region: 'asia', name: { 'zh-CN': '亚服', en: 'Asia' }, tone: 'cyan', tz: 8 },
   america: { region: 'us', name: { 'zh-CN': '美服', en: 'America' }, tone: 'blue', tz: -5 },
   europe: { region: 'eu', name: { 'zh-CN': '欧服', en: 'Europe' }, tone: 'violet', tz: 1 },

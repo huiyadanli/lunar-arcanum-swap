@@ -95,9 +95,7 @@ body::before {
     flex-direction: column; justify-content: flex-start; gap: 8px; padding: 20px 0;
     border-top: 0; border-right: 1px solid var(--border);
   }
-  .nav-brand { display: block; width: 44px; height: 44px; margin: 0 auto 16px; cursor: pointer; border-radius: 50%; transition: transform 0.2s, filter 0.2s; }
-  .nav-brand:hover { transform: scale(1.08); filter: brightness(1.15); }
-  .nav-brand:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+  .nav-brand { display: block; width: 44px; height: 44px; margin: 0 auto 16px; }
   .nav-item { flex: 0 0 64px; }
   .nav-badge { top: 4px; }
   #views {

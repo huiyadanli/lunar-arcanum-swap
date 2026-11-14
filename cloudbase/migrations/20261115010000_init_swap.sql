@@ -16,7 +16,7 @@ CREATE TABLE public.players (
   account_id text PRIMARY KEY REFERENCES public.accounts(id),
   uid text,
   server text CHECK (server IN ('celestia','irminsul','asia','america','europe','tw')),
-  region text CHECK (region IN ('cn','asia','us','eu','tw')),
+  region text CHECK (region IN ('cn','cn_bili','asia','us','eu','tw')),
   credit integer NOT NULL DEFAULT 100 CHECK (credit BETWEEN 0 AND 150),
   completed_count integer NOT NULL DEFAULT 0 CHECK (completed_count >= 0),
   fail_streak integer NOT NULL DEFAULT 0,
@@ -297,7 +297,8 @@ BEGIN
     FROM public.listings l JOIN public.players player ON player.account_id=l.account_id
     CROSS JOIN LATERAL (SELECT array_agg(card ORDER BY coalesce((pool_stats->'rarity'->>card::text)::numeric,0) DESC,card) AS gives FROM unnest(l.want) card WHERE coalesce((a.give->>card::text)::integer,0)>0) x
     CROSS JOIN LATERAL (SELECT array_agg(card ORDER BY coalesce((pool_stats->'rarity'->>card::text)::numeric,0) DESC,card) AS gets FROM unnest(a.want) card WHERE coalesce((l.give->>card::text)::integer,0)>0) y
-    WHERE l.region=a.region AND l.status='waiting' AND l.account_id<>actor AND player.credit>=30
+    -- 分区和实际区服均须一致，不能把天空岛与世界树配到一起。
+    WHERE l.region=a.region AND l.server=a.server AND l.status='waiting' AND l.account_id<>actor AND player.credit>=30
       AND (player.cooldown_until IS NULL OR player.cooldown_until<=now())
       AND NOT EXISTS (SELECT 1 FROM public.pair_blocks block WHERE block.account_a=least(actor,l.account_id)
         AND block.account_b=greatest(actor,l.account_id) AND block.until_at>now())
@@ -582,7 +583,7 @@ CREATE FUNCTION public.swap_maintenance() RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, swap_private AS $$
 DECLARE partition text; m public.matches; p public.players; confirmation jsonb; indices integer[]; processed integer := 0; next_due timestamptz;
 BEGIN
-  FOR partition IN SELECT unnest(ARRAY['asia','cn','eu','tw','us']) LOOP
+  FOR partition IN SELECT unnest(ARRAY['asia','cn','cn_bili','eu','tw','us']) LOOP
     PERFORM pg_advisory_xact_lock(hashtextextended('swap:'||partition,0));
     FOR m IN SELECT * FROM public.matches WHERE region=partition AND status IN ('matched','confirming') AND expires_at<=now() ORDER BY expires_at,id LIMIT 100 FOR UPDATE LOOP
       confirmation := coalesce(m.confirm_a,m.confirm_b);

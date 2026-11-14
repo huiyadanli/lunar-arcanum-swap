@@ -134,6 +134,8 @@ export function createOnlineApi({ apiBase, storage, fetcher = fetch, createAuth 
       try { return await signingIn; } finally { signingIn = undefined; }
     },
     updateProfile: data => request('/me', { method: 'PUT', body: data }),
+    // 独立管理面板自行显示加载状态，不改个人交换缓存或全站请求提示。
+    queryAdmin: body => request('/admin/query', { method: 'POST', body, background: true }),
     async getState(_server, { light = false, background = false } = {}) {
       let received = await request(light && lastState ? '/state?light=1' : '/state', { background });
       if (received.history === null && lastState?.matches.some(old => !received.matches.some(m => m.id === old.id))) {

@@ -47,6 +47,14 @@ describe('HTTP API 与输入边界', () => {
       assert.equal(calls[0][0].authId, 'test-user');
     });
   });
+  it('世界树 UID 由服务端归入独立分区，不能被客户端伪装成天空岛', async () => {
+    await withServer(async (base, calls) => {
+      const response = await fetch(`${base}/api/v1/me`, { method: 'PUT', headers,
+        body: JSON.stringify({ uid: '598765432', server: 'celestia', region: 'cn' }) });
+      assert.equal(response.status, 200);
+      assert.deepEqual(calls[0][2], { uid: '598765432', server: 'irminsul', region: 'cn_bili' });
+    });
+  });
   it('区分未知路由和错误方法，预检不重复设置网关跨域头', async () => {
     await withServer(async base => {
       assert.equal((await fetch(`${base}/api/v1/nope`)).status, 404);

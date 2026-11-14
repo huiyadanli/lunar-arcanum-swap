@@ -57,12 +57,14 @@
 | UID | 服务器 | 分区 |
 |---|---|---|
 | 9 位首位 1 / 2 / 3 | 天空岛 | `cn` |
-| 9 位首位 5 | 世界树（与天空岛互通） | `cn` |
+| 9 位首位 5 | 世界树（与天空岛不互通） | `cn_bili` |
 | 9 位首位 6 / 7 / 8 / 9 | 美服 / 欧服 / 亚服 / 港澳台服 | `us` / `eu` / `asia` / `tw` |
 | 10 位前缀 `18` | 亚服 | `asia` |
 | 其他 | 无法识别，不能继续 | — |
 
 格式：纯数字、9 或 10 位、不能全相同或明显顺序串。
+
+六个区服各自匹配，天空岛与世界树不能互加好友或交换。天空岛的 1 / 2 / 3 号段属于同服，亚服的 9 位 `8` 号段与 10 位 `18` 号段属于同服。后端按分区筛选后，再校验双方实际区服相同；等待池统计和到期维护使用同一套独立分区。
 
 ---
 
@@ -248,7 +250,7 @@ SDK 由 `toy-sdk-loader.js` 按域名动态加载（不再用构建变量区分�
 ### 9.4 限频与反作弊
 
 - 主动发布或重新匹配：每账号共用冷却：**B站账号（云存储可读写即视为已登录，无需头像昵称授权）1 分钟、匿名账号 20 分钟**（匹配本身不要求 B站授权），从每次成功发布或主动重新匹配时开始计时，不按服务器游戏日刷新；对方原因失败回池不触发新的冷却；成功交换恢复额度（5.5）；等待期间编辑需求不限次但**不触发扫描**；撤回需求立即恢复额度，再发布开始新一轮冷却。信用处罚冷却（7 天）与发布额度分开。
-- 写操作限流（设备 / IP）；数据异常（单牌 > 99、给出总数 > 200）拒绝；留言走预设白名单；举报关联具体匹配与对方账号，被多人举报进入人工复核；异常 reveal 行为人工复核；完整 UID 只经 reveal 返回给双方。
+- 已取消设备 / IP 的写操作请求限流；数据异常（单牌 > 99、给出总数 > 200）拒绝；留言走预设白名单；举报关联具体匹配与对方账号，被多人举报进入人工复核；异常 reveal 行为人工复核；完整 UID 只经 reveal 返回给双方。
 
 ---
 
@@ -279,7 +281,9 @@ src/
 assets/{cards,fonts,icons,recognition}/
 backend/                    # 本地开发服务与云函数公共代码
 cloudfunctions/{swap-api,swap-maintenance}/
-cloudbase/migrations/20261115010000_init_swap.sql   # 唯一初始化迁移（含账号类型冷却）
+cloudbase/migrations/20261115010000_init_swap.sql   # 初始化迁移（含账号类型冷却）
+cloudbase/migrations/20261115020000_separate_cn_servers.sql # 已有环境的国服区服隔离
+scripts/repair-cn-server-matches.sql               # 跨服错误数据运维修复
 scripts/                    # 资源构建、后端构建 / 打包 / 部署、识别评估
 tests/                      # box-code, trade-notes, exchange-site, toy-sdk-loader, backend-*, maintenance-scheduler
 ```
@@ -304,7 +308,7 @@ tests/                      # box-code, trade-notes, exchange-site, toy-sdk-load
 - **架构**：CloudBase Auth + HTTP 云函数 `swap-api`（网关 `/api/v1`）+ Event 云函数 `swap-maintenance`（每分钟定时）+ PostgreSQL（RPC 事务，业务表启用 RLS，RPC 仅授予 `service_role`）。维护任务先查 COS 到期索引，无任务不访问数据库。
 - **11 个接口**：`GET /config`、`POST /session`、`PUT /me`、`GET /state`、发布 / 编辑 / 撤回 / 重新匹配需求、`POST /matches/:id/reveal`、`POST /matches/:id/confirm`、`POST /matches/:id/feedback`（申诉与举报合并）。`/config` 只下发 `authorMid` 与 CloudBase 公开登录参数；服务器、UID 规则、留言预设等静态数据随前端打包。
 - **错误格式**：`{ error: { code, message, retryAt? }, requestId }`；常见码 `UID_INVALID`、`DAILY_LIMIT`、`COOLDOWN`、`LISTING_EXISTS`、`CARDS_LOCKED`、`RATE_LIMITED`、`CREDENTIAL_INVALID`、`BILI_ALREADY_LINKED`、`NOTE_TEXT_FORBIDDEN`、`NOTE_REJECTED`。重复 UID 正常成功。
-- **数据模型**：`Account`、`Player`（信用、冷却、额度，UID 可重复无唯一约束）、`Listing`、`Match`（含 UID 快照、`scannedBy`、各方 reveal / confirm）、`PairBlock`、`Feedback`、`RequestRecord`（幂等与限流）。所有权与外键均以账号 ID 为准。
+- **数据模型**：`Account`、`Player`（信用、冷却、额度，UID 可重复无唯一约束）、`Listing`、`Match`（含 UID 快照、`scannedBy`、各方 reveal / confirm）、`PairBlock`、`Feedback`、`RequestRecord`（请求幂等；设备 / IP 限流已取消）。所有权与外键均以账号 ID 为准。
 - **隐私**：`toyOpenId` 只存 HMAC；日志过滤 `toyOpenId / credential / ticket / token`；B站昵称头像不上传。
 
 ---

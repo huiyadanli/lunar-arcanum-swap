@@ -44,9 +44,9 @@
   <div class="shell">
     <!-- 导航：手机为底部标签栏，PC 为左侧竖排 -->
     <nav class="nav" x-show="route !== 'welcome'" x-cloak aria-label="主导航">
-      <a href="#/welcome" class="nav-brand" @click.prevent="goHome()" :aria-label="t('nav.home')" :title="t('nav.home')">
+      <div class="nav-brand" aria-hidden="true">
         <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="40" class="moon-dark"/><path :d="moonPath(0.72)" class="moon-lit"/></svg>
-      </a>
+      </div>
       <a href="#/box" class="nav-item" :class="{ on: route === 'box' }">
         <svg class="icon" aria-hidden="true" focusable="false"><use href="assets/icons/ui.svg#cards"></use></svg>
         <span x-text="t('nav.box')"></span>

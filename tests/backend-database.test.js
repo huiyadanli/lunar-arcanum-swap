@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { createHash, randomUUID } from 'node:crypto';
 import { PGlite } from '@electric-sql/pglite';
+import { profile } from '../backend/validation.js';
 
 let db;
 const uid = '812345678';
@@ -13,7 +14,7 @@ async function call(actor, action, data = {}, key = randomUUID(), customId = nul
   return result.rows[0].data;
 }
 const state = actor => call(actor, 'state');
-const bind = (actor, gameUid = uid, server = 'asia', region = 'asia') => call(actor, 'profile', { uid: gameUid, server, region });
+const bind = (actor, gameUid = uid) => call(actor, 'profile', profile({ uid: gameUid }));
 const publish = (actor, give, want, key) => call(actor, 'publish', { give, want, mode: 'quick', note: null }, key);
 async function matchTwo({ give = { 17: 1 }, want = [1], partnerGive = { 1: 1 }, partnerWant = [17] } = {}) {
   await bind('alice'); await bind('bob');
@@ -35,6 +36,67 @@ describe('PostgreSQL 真实事务与业务约束', { concurrency: false }, () =>
   });
   beforeEach(async () => { await db.exec('TRUNCATE public.accounts CASCADE; TRUNCATE swap_private.rate_limits;'); });
   after(async () => { await db?.close(); });
+
+  it('天空岛和世界树供需互补也不能匹配，等待人数与供需按各自分区统计', async () => {
+    await bind('celestia', '198765432');
+    await bind('irminsul', '598765432');
+    assert.deepEqual((await publish('celestia', { 17: 1 }, [1])).matches, []);
+    assert.deepEqual((await publish('irminsul', { 1: 1 }, [17])).matches, []);
+    const official = await state('celestia');
+    const bili = await state('irminsul');
+    assert.equal(official.me.region, 'cn');
+    assert.equal(bili.me.region, 'cn_bili');
+    assert.equal(official.stats.waiting, 1);
+    assert.equal(bili.stats.waiting, 1);
+    assert.deepEqual(official.stats.supply, { 17: 1 });
+    assert.deepEqual(official.stats.demand, { 1: 1 });
+    assert.deepEqual(bili.stats.supply, { 1: 1 });
+    assert.deepEqual(bili.stats.demand, { 17: 1 });
+    assert.equal((await scalar('SELECT count(*)::int AS count FROM public.matches')).count, 0);
+  });
+
+  it('六服独立匹配，天空岛 1/2/3 号段及亚服 8/18 号段保持互通', async () => {
+    const groups = [
+      ['celestia', 'cn', ['198765432', '298765432', '398765432']],
+      ['irminsul', 'cn_bili', ['598765432', '598765433']],
+      ['america', 'us', ['698765432', '698765433']],
+      ['europe', 'eu', ['798765432', '798765433']],
+      ['asia', 'asia', ['898765432', '1898765432']],
+      ['tw', 'tw', ['998765432', '998765433']],
+    ];
+    for (const [server, region, uids] of groups) {
+      await bind(server, uids[0]);
+      await publish(server, { 17: uids.length - 1 }, uids.slice(1).map((_, i) => i + 1));
+      assert.equal((await state(server)).me.region, region);
+    }
+    for (const [server, region, uids] of groups) {
+      assert.equal((await state(server)).stats.waiting, 1);
+      for (let i = 1; i < uids.length; i++) {
+        const actor = `${server}-${i}`;
+        await bind(actor, uids[i]);
+        const result = await publish(actor, { [i]: 1 }, [17]);
+        assert.equal(result.matches.length, 1);
+        assert.equal(result.matches[0].partner.server, server);
+        assert.equal((await scalar('SELECT region FROM public.matches WHERE id=$1', [result.matches[0].id])).region, region);
+      }
+    }
+  });
+
+  it('世界树独立分区的到期匹配仍由维护任务结算并释放占用', async () => {
+    await bind('alice', '598765432');
+    await bind('bob', '598765433');
+    await publish('alice', { 17: 1 }, [1]);
+    const id = (await publish('bob', { 1: 1 }, [17])).matches[0].id;
+    await db.query("UPDATE public.matches SET expires_at=now()-interval '1 second' WHERE id=$1", [id]);
+    assert.equal((await scalar('SELECT public.swap_maintenance() AS data')).data.processed, 1);
+    const alice = await state('alice');
+    assert.deepEqual(alice.matches, []);
+    assert.equal(alice.history[0].status, 'expired');
+    assert.deepEqual(alice.listing.give, { 17: 1 });
+    assert.deepEqual(alice.listing.reservedGive, {});
+    assert.equal((await scalar("SELECT credit FROM public.players WHERE account_id='anon:alice'")).credit, 95);
+    assert.equal((await scalar('SELECT public.swap_maintenance() AS data')).data.processed, 0);
+  });
 
   it('允许两个账号填写同一 UID，分别发布且直接正常匹配，不泄露 UID 或账号类型', async () => {
     const id = await matchTwo();

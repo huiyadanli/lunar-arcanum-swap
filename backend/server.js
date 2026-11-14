@@ -3,12 +3,14 @@ import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import { ApiError } from './errors.js';
 import * as validate from './validation.js';
+import { createAdminHandler } from './admin.js';
 
 const routes = [
   ['GET', /^\/api\/v1\/config$/, 'config'],
   ['POST', /^\/api\/v1\/session$/, 'session'],
   ['PUT', /^\/api\/v1\/me$/, 'profile'],
   ['GET', /^\/api\/v1\/state$/, 'state'],
+  ['POST', /^\/api\/v1\/admin\/query$/, 'adminQuery'],
   ['POST', /^\/api\/v1\/listings$/, 'publish'],
   ['PATCH', /^\/api\/v1\/listings\/current$/, 'edit'],
   ['DELETE', /^\/api\/v1\/listings\/current$/, 'withdraw'],
@@ -38,6 +40,8 @@ async function readBody(request) {
 }
 
 export function createServer({ service, config, logger = console }) {
+  const queryAdmin = createAdminHandler({ passwordHash: config.adminPasswordHash,
+    query: (identity, query, passwordVerified) => service.queryAdmin(identity, query, passwordVerified) });
   return http.createServer({ requestTimeout: 20000, headersTimeout: 10000, maxHeaderSize: 16384 }, async (request, response) => {
     const requestId = randomUUID();
     const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store',
@@ -78,6 +82,10 @@ export function createServer({ service, config, logger = console }) {
       const authorization = request.headers.authorization;
       if (typeof authorization !== 'string' || !/^Bearer [\w.\/~+\-=]+$/.test(authorization) || authorization.length > 8192) throw new ApiError('UNAUTHENTICATED', 401);
       const identity = await service.authenticate(authorization.slice(7), deviceId);
+      // 管理查询不进入业务 dispatch，不要求写入幂等键，也不触发维护。
+      if (action === 'adminQuery') {
+        send(200, await queryAdmin(identity, await readBody(request), context)); return;
+      }
       if (request.method !== 'GET') {
         const key = request.headers['idempotency-key'];
         if (typeof key !== 'string' || !/^[\w-]{8,128}$/.test(key)) throw new ApiError('IDEMPOTENCY_KEY_REQUIRED', 400);

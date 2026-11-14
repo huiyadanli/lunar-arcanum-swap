@@ -85,7 +85,6 @@ function app() {
     route: 'box',
     param: null,
     onboardStep: 0,
-    replayWelcome: false, // 已完成引导的用户点 logo 回到首页重看引导
     onboardHint: null,
     uidInput: '',
     fx: 'high',
@@ -443,10 +442,9 @@ function app() {
       const [r, p] = location.hash.replace(/^#\/?/, '').split('/');
       let route = ROUTES.includes(r) ? r : this.onboarded ? 'box' : 'welcome';
       if (!this.onboarded && route !== 'welcome') route = 'welcome';
-      if (this.onboarded && route === 'welcome' && !this.onboardStep && !this.replayWelcome) route = 'box';
+      if (this.onboarded && route === 'welcome' && !this.onboardStep) route = 'box';
       const apply = () => {
         this.route = route;
-        if (route !== 'welcome') this.replayWelcome = false;
         this.param = p || null;
         this.sheet = null;
         window.scrollTo(0, 0);
@@ -472,11 +470,6 @@ function app() {
     },
     serverKeyOf(uid) {
       return resolveUid(uid).server || null;
-    },
-    goHome() {
-      this.replayWelcome = true;
-      this.onboardStep = 0;
-      this.go('welcome');
     },
     startOnboarding() {
       this.uidInput = this.uid;
